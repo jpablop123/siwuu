@@ -5,10 +5,7 @@ import { formatCOP } from '@/lib/utils'
 // Cliente Resend
 // ---------------------------------------------------------------------------
 
-const resendApiKey = process.env.RESEND_API_KEY
-if (!resendApiKey) {
-  throw new Error('Missing RESEND_API_KEY environment variable')
-}
+const resendApiKey = process.env.RESEND_API_KEY ?? 'placeholder'
 
 export const resend = new Resend(resendApiKey)
 

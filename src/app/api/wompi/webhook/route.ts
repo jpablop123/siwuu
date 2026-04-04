@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   // ───────────────────────────────────────────────────────────
   // Paso 2 — Verificar firma ANTES de parsear
   // ───────────────────────────────────────────────────────────
-  const integritySecret = process.env.WOMPI_INTEGRITY_SECRET
+  const integritySecret = process.env.WOMPI_EVENTS_SECRET
   if (integritySecret) {
     const checksum = request.headers.get('x-event-checksum')
     if (!checksum) {

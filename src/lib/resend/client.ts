@@ -5,7 +5,12 @@ import { formatCOP } from '@/lib/utils'
 // Cliente Resend
 // ---------------------------------------------------------------------------
 
-export const resend = new Resend(process.env.RESEND_API_KEY)
+const resendApiKey = process.env.RESEND_API_KEY
+if (!resendApiKey) {
+  throw new Error('Missing RESEND_API_KEY environment variable')
+}
+
+export const resend = new Resend(resendApiKey)
 
 export const FROM_EMAIL = `${process.env.NEXT_PUBLIC_STORE_NAME ?? 'SiwuuShop'} <pedidos@${process.env.RESEND_FROM_DOMAIN ?? 'resend.dev'}>`
 

@@ -21,7 +21,7 @@ export async function registrarse(
   if (password !== confirmarPassword) return { error: 'Las contraseñas no coinciden' }
 
   const supabase = createClient()
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -31,6 +31,11 @@ export async function registrarse(
   })
 
   if (error) return { error: error.message }
+
+  // Supabase no retorna error cuando el email ya existe — retorna identities vacío
+  if (data.user?.identities?.length === 0) {
+    return { error: 'Ya existe una cuenta con ese email' }
+  }
 
   // Email de bienvenida — best effort
   try {

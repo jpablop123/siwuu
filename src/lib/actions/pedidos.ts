@@ -4,6 +4,9 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { construirURLCheckout } from '@/lib/wompi/client'
 import { calcularEnvio } from '@/lib/utils'
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const TELEFONO_REGEX = /^[+]?[\d\s\-().]{7,15}$/
+
 interface ItemInput {
   productoId: string
   cantidad: number
@@ -38,6 +41,14 @@ export async function crearPedido(formData: FormData): Promise<CrearPedidoResult
 
   if (!nombre || !email || !telefono || !ciudad || !departamento || !direccion || items.length === 0) {
     return { ok: false, error: 'Campos incompletos' }
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    return { ok: false, error: 'Email inválido' }
+  }
+
+  if (!TELEFONO_REGEX.test(telefono)) {
+    return { ok: false, error: 'Teléfono inválido' }
   }
 
   // Validar que cada item tiene productoId y cantidad válida

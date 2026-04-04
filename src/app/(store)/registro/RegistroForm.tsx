@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { registrarse } from '@/lib/actions/auth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Mail } from 'lucide-react'
 import Link from 'next/link'
 
 interface FieldErrors {
@@ -60,17 +60,17 @@ export function RegistroForm() {
 
   if (registrado) {
     return (
-      <div className="rounded-xl border border-green-800 bg-green-900/30 p-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-900/50 text-2xl">
-          ✉️
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-8 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20">
+          <Mail className="h-7 w-7 text-emerald-400" />
         </div>
-        <h2 className="text-lg font-bold text-zinc-100">Tu cuenta ha sido registrada</h2>
-        <p className="mt-2 text-sm text-zinc-400">
+        <h2 className="text-lg font-bold text-zinc-100">¡Cuenta creada!</h2>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
           Te enviamos un email de confirmación. Revisá tu bandeja de entrada y hacé click en el enlace para activar tu cuenta.
         </p>
         <Link
           href="/login"
-          className="mt-4 inline-block text-sm font-medium text-emerald-400 hover:underline"
+          className="mt-5 inline-block rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500 transition-colors"
         >
           Ir a iniciar sesión
         </Link>
@@ -81,7 +81,7 @@ export function RegistroForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {errors.global && (
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400" role="alert">
           {errors.global}
         </div>
       )}

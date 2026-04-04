@@ -4,6 +4,8 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { enviarEmailActualizacionEstado } from '@/lib/resend/emails'
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 // ---------------------------------------------------------------------------
 // Verificación admin — OBLIGATORIA antes de cada acción
 // ---------------------------------------------------------------------------
@@ -584,6 +586,7 @@ export async function crearProveedor(
   const notas = formData.get('notas')?.toString().trim() || null
 
   if (!nombre) return { error: 'Nombre es requerido' }
+  if (email && !EMAIL_REGEX.test(email)) return { error: 'Email del proveedor inválido' }
 
   const { error } = await supabase.from('proveedores').insert({
     nombre,

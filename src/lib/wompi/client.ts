@@ -67,13 +67,11 @@ export async function generarHashIntegridad(
   referencia: string,
   montoEnCentavos: number,
   moneda: string,
-  secreto: string,
-  redirectUrl?: string
+  secreto: string
 ): Promise<string> {
-  const cadena = redirectUrl
-    ? `${referencia}${montoEnCentavos}${moneda}${redirectUrl}${secreto}`
-    : `${referencia}${montoEnCentavos}${moneda}${secreto}`
-  return sha256(cadena)
+  // Wompi: SHA256(referencia + montoEnCentavos + moneda + secreto)
+  // redirectUrl NO forma parte del hash del widget embebido
+  return sha256(`${referencia}${montoEnCentavos}${moneda}${secreto}`)
 }
 
 // ---------------------------------------------------------------------------

@@ -116,7 +116,8 @@ export async function POST(request: Request) {
         referencia,
         montoEnCentavos,
         'COP',
-        process.env.WOMPI_INTEGRITY_SECRET!
+        process.env.WOMPI_INTEGRITY_SECRET!,
+        redirectUrl
       ),
     ])
 

@@ -56,19 +56,23 @@ export function generarReferencia(pedidoId: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Genera el hash de integridad SHA-256 requerido por Wompi para
- * garantizar que los parámetros del pago no fueron manipulados.
+ * Genera el hash de integridad SHA-256 requerido por Wompi.
  *
- * La cadena se construye concatenando: referencia + montoEnCentavos + moneda + secreto
+ * Formato para el widget embebido:
+ *   SHA256(referencia + montoEnCentavos + moneda + redirectUrl + secreto)
+ *
  * Docs: https://docs.wompi.co/docs/colombia/widget-checkout-web/#firmas-de-integridad
  */
 export async function generarHashIntegridad(
   referencia: string,
   montoEnCentavos: number,
   moneda: string,
-  secreto: string
+  secreto: string,
+  redirectUrl?: string
 ): Promise<string> {
-  const cadena = `${referencia}${montoEnCentavos}${moneda}${secreto}`
+  const cadena = redirectUrl
+    ? `${referencia}${montoEnCentavos}${moneda}${redirectUrl}${secreto}`
+    : `${referencia}${montoEnCentavos}${moneda}${secreto}`
   return sha256(cadena)
 }
 

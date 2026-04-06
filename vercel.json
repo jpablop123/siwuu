@@ -1,8 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/expirar-pedidos",
-      "schedule": "0 3 * * *"
-    }
-  ]
-}
+{}

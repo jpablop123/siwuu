@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { formatCOP } from '@/lib/utils'
 import { Pagination } from '@/components/store/Pagination'
 import Link from 'next/link'
@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default async function AdminProductosPage({ searchParams }: Props) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
   const { q, categoria, proveedor, activo, page } = searchParams
   const currentPage = Math.max(1, parseInt(page || '1'))
 

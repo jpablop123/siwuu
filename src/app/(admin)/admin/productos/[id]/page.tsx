@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { ProductoForm } from '@/components/admin/ProductoForm'
 import { notFound } from 'next/navigation'
 import type { Producto, Categoria, Proveedor, Variante } from '@/types'
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default async function EditarProductoPage({ params }: Props) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
 
   const [productoRes, catRes, provRes] = await Promise.all([
     supabase.from('productos').select('*, variantes(*)').eq('id', params.id).single(),

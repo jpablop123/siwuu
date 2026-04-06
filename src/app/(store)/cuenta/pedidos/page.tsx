@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { vincularPedidosHuerfanos } from '@/lib/actions/cuenta'
 import { Price } from '@/components/store/Price'
 import { EstadoPedidoBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
 }
 
 export default async function MisPedidosPage() {
+  // Reclamar silenciosamente pedidos de invitado con el mismo email verificado.
+  // Idempotente: no-op si ya fueron vinculados o si no hay huérfanos.
+  await vincularPedidosHuerfanos()
+
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

@@ -4,8 +4,9 @@
  * Punto de entrada único para toda la lógica de negocio del checkout:
  * - Validación de inputs
  * - Recálculo de precios desde BD (nunca confiar en el frontend)
- * - Decremento atómico de stock
- * - Inserción de pedido, items y registro de pago
+ * - Checkout atómico vía RPC: INSERT pedido + stock + items + pago en
+ *   una sola transacción SQL (migración 012). PostgreSQL hace ROLLBACK
+ *   automático si algo falla — eliminamos el rollback manual en TypeScript.
  * - Generación de referencia e hash de integridad Wompi
  *
  * Consumidores:
@@ -46,6 +47,7 @@ export interface PedidoInput {
 
 export interface PedidoCreado {
   pedidoId: string
+  tokenAcceso: string
   referencia: string
   montoEnCentavos: number
   redirectUrl: string
@@ -118,8 +120,7 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
   }
 
   const productosMap = new Map(
-    (productosDB as Array<{ id: string; nombre: string; precio_venta: number; imagenes: string[] }>)
-      .map((p) => [p.id, { nombre: p.nombre, precio: p.precio_venta, imagen: p.imagenes?.[0] ?? '' }])
+    productosDB.map((p) => [p.id, { nombre: p.nombre, precio: p.precio_venta, imagen: p.imagenes?.[0] ?? '' }])
   )
 
   let subtotal = 0
@@ -137,93 +138,69 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
   const { data: numPedido } = await supabase.rpc('generar_numero_pedido')
   const numero = (numPedido as string) ?? `PED-${Date.now()}`
 
-  // ── 3. INSERT pedido ───────────────────────────────────────────────
-  const { data: pedido, error: pedidoError } = await supabase
-    .from('pedidos')
-    .insert({
-      numero,
-      user_id: userId ?? null,
-      email_cliente: email,
-      nombre_cliente: nombre,
-      telefono_cliente: telefono,
-      ciudad,
-      departamento,
-      direccion_envio: direccion,
-      subtotal,
-      costo_envio: costoEnvio,
-      total,
-      estado: 'pendiente',
-    })
-    .select('id')
-    .single()
-
-  if (pedidoError || !pedido) {
-    console.error('[procesarPedido] Error creando pedido:', pedidoError)
-    return { ok: false, error: 'Error al procesar el pedido', status: 500 }
-  }
-
-  const pedidoId: string = (pedido as { id: string }).id
-
-  // ── 4. Decrementar stock (FOR UPDATE en PG — sin race conditions) ──
-  for (const item of items) {
-    const { error: stockError } = await supabase.rpc('decrementar_stock', {
-      p_producto_id: item.productoId,
-      p_cantidad: item.cantidad,
-    })
-    if (stockError) {
-      // Rollback del pedido ya creado
-      await supabase.from('pedidos').delete().eq('id', pedidoId)
-      const sinStock = stockError.message?.includes('insuficiente')
-      return {
-        ok: false,
-        error: sinStock
-          ? `Sin stock suficiente para "${productosMap.get(item.productoId)?.nombre}"`
-          : 'Error verificando stock',
-        status: sinStock ? 409 : 500,
-      }
-    }
-  }
-
-  // ── 5. INSERT pedido_items ─────────────────────────────────────────
-  const pedidoItems = items.map((item) => {
-    const p = productosMap.get(item.productoId)!
-    return {
-      pedido_id: pedidoId,
-      producto_id: item.productoId,
-      nombre_producto: p.nombre,
-      imagen_producto: p.imagen,
-      variante: item.variante ?? null,
-      cantidad: item.cantidad,
-      precio_unitario: p.precio,
-      subtotal: p.precio * item.cantidad,
-    }
-  })
-
-  const { error: itemsError } = await supabase.from('pedido_items').insert(pedidoItems)
-  if (itemsError) {
-    console.error('[procesarPedido] Error creando items:', itemsError)
-    await supabase.from('pedidos').delete().eq('id', pedidoId)
-    return { ok: false, error: 'Error al procesar el pedido', status: 500 }
-  }
-
-  // ── 6. Referencia + hash Wompi + registro de pago (paralelo) ──────
+  // ── 3. UUID y referencia Wompi — se calculan antes del RPC para poder
+  //       pasarlos al checkout atómico en un solo viaje a la BD ────────
+  const pedidoId = crypto.randomUUID()
   const referencia = generarReferencia(pedidoId)
   const redirectUrl = `${appUrl}/checkout/gracias/${pedidoId}`
 
-  const [, integrityHash] = await Promise.all([
-    supabase.from('pagos').insert({
-      pedido_id: pedidoId,
-      monto: total,
-      wompi_referencia: referencia,
-      estado: 'pendiente',
-    }),
-    generarHashIntegridad(
-      referencia,
-      montoEnCentavos,
-      'COP',
-      process.env.WOMPI_INTEGRITY_SECRET!
-    ),
-  ])
+  // ── 4. Serializar items para el RPC ───────────────────────────────
+  const itemsJson = items.map((item) => {
+    const p = productosMap.get(item.productoId)!
+    return {
+      producto_id:     item.productoId,
+      nombre_producto: p.nombre,
+      imagen_producto: p.imagen || null,
+      variante:        item.variante ?? null,
+      cantidad:        item.cantidad,
+      precio_unitario: p.precio,
+      subtotal:        p.precio * item.cantidad,
+    }
+  })
+
+  // ── 5. Checkout atómico — INSERT pedido + stock + items + pago ────
+  //       Un único viaje a PostgreSQL. Si decrementar_stock() lanza
+  //       RAISE EXCEPTION (sin stock), el ROLLBACK es automático.
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    'procesar_checkout_atomico',
+    {
+      p_pedido_id:    pedidoId,
+      p_numero:       numero,
+      p_user_id:      userId,
+      p_email:        email,
+      p_nombre:       nombre,
+      p_telefono:     telefono,
+      p_ciudad:       ciudad,
+      p_departamento: departamento,
+      p_direccion:    direccion,
+      p_subtotal:     subtotal,
+      p_costo_envio:  costoEnvio,
+      p_total:        total,
+      p_items:        itemsJson,
+      p_referencia:   referencia,
+    }
+  )
+
+  if (rpcError || !rpcData || rpcData.length === 0) {
+    console.error('[procesarPedido] Error en checkout atómico:', rpcError)
+    // El mensaje de PG tiene formato: 'Stock insuficiente para el producto: Camiseta Roja'
+    // Lo propagamos directamente para que el frontend pueda mostrarlo al usuario.
+    const sinStock = rpcError?.message?.includes('Stock insuficiente para el producto:')
+    if (sinStock) {
+      return { ok: false, error: rpcError!.message, status: 409 }
+    }
+    return { ok: false, error: 'Error al procesar el pedido', status: 500 }
+  }
+
+  const tokenAcceso = rpcData[0].token_acceso
+
+  // ── 6. Hash de integridad Wompi ────────────────────────────────────
+  const integrityHash = await generarHashIntegridad(
+    referencia,
+    montoEnCentavos,
+    'COP',
+    process.env.WOMPI_INTEGRITY_SECRET!
+  )
 
   // ── 7. Guardar dirección (opcional, no bloquea el flujo) ───────────
   if (userId && guardarDireccion) {
@@ -240,5 +217,5 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
     })
   }
 
-  return { ok: true, pedidoId, referencia, montoEnCentavos, redirectUrl, integrityHash }
+  return { ok: true, pedidoId, tokenAcceso, referencia, montoEnCentavos, redirectUrl, integrityHash }
 }

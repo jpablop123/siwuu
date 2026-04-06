@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 import type { Categoria } from '@/types'
 import { CategoriasManager } from './CategoriasManager'
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 
 export default async function AdminCategoriasPage() {
-  const supabase = createClient()
+  const supabase = createServiceClient()
 
   const { data: categorias } = await supabase
     .from('categorias')

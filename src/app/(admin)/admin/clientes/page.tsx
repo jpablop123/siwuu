@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { formatCOP } from '@/lib/utils'
-import { Pagination } from '@/components/store/Pagination'
+import { PaginationControls } from '@/components/admin/PaginationControls'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { BusquedaClientes } from './BusquedaClientes'
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default async function AdminClientesPage({ searchParams }: Props) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
   const { q, page } = searchParams
   const currentPage = Math.max(1, parseInt(page || '1'))
 
@@ -172,17 +172,7 @@ export default async function AdminClientesPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        createHref={(p) => {
-          const params = new URLSearchParams()
-          if (q) params.set('q', q)
-          if (p > 1) params.set('page', p.toString())
-          const qs = params.toString()
-          return `/admin/clientes${qs ? `?${qs}` : ''}`
-        }}
-      />
+      <PaginationControls totalItems={count ?? 0} perPage={PER_PAGE} />
     </div>
   )
 }

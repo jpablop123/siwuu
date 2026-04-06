@@ -1,13 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { formatCOP } from '@/lib/utils'
 import { EstadoPedidoBadge } from '@/components/ui/Badge'
-import { AdminOrderControl } from '@/components/admin/AdminOrderControl'
+import { OrderStatusManager } from '@/components/admin/OrderStatusManager'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import type { Metadata } from 'next'
 import type { EstadoPedido } from '@/types'
+import { BotonCancelarPedido } from './BotonCancelarPedido'
 
 export const metadata: Metadata = {
   title: 'Detalle Pedido - Admin',
@@ -19,7 +20,7 @@ interface Props {
 }
 
 export default async function AdminDetallePedidoPage({ params }: Props) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
 
   // Fetch pedido con items, productos (para url_proveedor y precio_costo) y pagos
   const { data: pedido } = await supabase
@@ -248,16 +249,18 @@ export default async function AdminDetallePedidoPage({ params }: Props) {
 
         {/* Columna lateral */}
         <div className="space-y-6">
-          <AdminOrderControl
+          <OrderStatusManager
             pedidoId={pedido.id}
             estadoActual={pedido.estado}
-            numeroGuiaActual={pedido.numero_guia}
+            numeroGuiaActual={pedido.numero_guia ?? undefined}
             itemsConProveedor={items.map((i) => ({
               nombre: i.nombre_producto,
               cantidad: i.cantidad,
               urlProveedor: i.producto?.url_proveedor ?? null,
             }))}
           />
+
+          <BotonCancelarPedido pedidoId={pedido.id} estadoActual={pedido.estado} />
 
           {/* Cronología */}
           <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">

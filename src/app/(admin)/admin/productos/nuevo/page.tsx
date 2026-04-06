@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { ProductoForm } from '@/components/admin/ProductoForm'
 import type { Categoria, Proveedor } from '@/types'
 import type { Metadata } from 'next'
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 
 export default async function NuevoProductoPage() {
-  const supabase = createClient()
+  const supabase = createServiceClient()
 
   const [catRes, provRes] = await Promise.all([
     supabase.from('categorias').select('*').eq('activa', true).order('nombre'),

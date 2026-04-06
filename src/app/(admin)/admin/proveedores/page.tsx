@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 import type { Proveedor } from '@/types'
 import { ProveedoresManager } from './ProveedoresManager'
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 
 export default async function AdminProveedoresPage() {
-  const supabase = createClient()
+  const supabase = createServiceClient()
 
   const { data: proveedores } = await supabase
     .from('proveedores')

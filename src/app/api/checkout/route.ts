@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     // ── Cookie para pedidos de invitados ──────────────────────────────
     if (!userId) {
       const cookieStore = cookies()
-      cookieStore.set(`guest_pedido_${result.pedidoId}`, '1', {
+      cookieStore.set(`guest_pedido_${result.pedidoId}`, result.tokenAcceso, {
         httpOnly: true,
         secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',

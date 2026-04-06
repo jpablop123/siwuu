@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { ProductImages } from '@/components/store/ProductImages'
+import { ProductGallery } from '@/components/store/ProductGallery'
 import { ProductGrid } from '@/components/store/ProductGrid'
 import { AddToCartForm } from './AddToCartForm'
 import { Badge } from '@/components/ui/Badge'
@@ -96,7 +96,7 @@ export default async function ProductoPage({ params }: Props) {
       {/* Layout dos columnas */}
       <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
         {/* Izquierda: Galería */}
-        <ProductImages imagenes={p.imagenes} nombre={p.nombre} />
+        <ProductGallery imagenes={p.imagenes} nombre={p.nombre} />
 
         {/* Derecha: Info */}
         <div>
@@ -112,7 +112,7 @@ export default async function ProductoPage({ params }: Props) {
               </Badge>
             )}
             {descuento > 0 && (
-              <Badge variant="danger">-{descuento}% OFF</Badge>
+              <Badge variant="danger">🔥 -{descuento}% OFF</Badge>
             )}
           </div>
 
@@ -129,10 +129,21 @@ export default async function ProductoPage({ params }: Props) {
           )}
 
           {/* Precios */}
-          <div className="mt-5 flex items-baseline gap-3">
-            <Price amount={p.precio_venta} className="font-mono text-3xl font-bold text-emerald-500" />
+          <div className="mt-5">
+            <div className="flex items-baseline gap-3">
+              <Price amount={p.precio_venta} className="font-mono text-3xl font-bold text-emerald-500" />
+              {p.precio_tachado && descuento > 0 && (
+                <Price amount={p.precio_tachado} className="font-mono text-lg text-zinc-400 line-through" />
+              )}
+            </div>
             {p.precio_tachado && descuento > 0 && (
-              <Price amount={p.precio_tachado} className="font-mono text-lg text-zinc-400 line-through" />
+              <p className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                Ahorras{' '}
+                <span className="font-bold">
+                  <Price amount={p.precio_tachado - p.precio_venta} className="inline" />
+                </span>{' '}
+                en esta compra
+              </p>
             )}
           </div>
 

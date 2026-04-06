@@ -1,19 +1,18 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   crearProducto,
   actualizarProducto,
-  subirImagen,
   crearVariante,
   eliminarVariante,
 } from '@/lib/actions/admin'
 import { formatCOP } from '@/lib/utils'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { Upload, X, Plus, ArrowLeft, ArrowRight, Check } from 'lucide-react'
-import Image from 'next/image'
+import { X, Plus, Check } from 'lucide-react'
+import { ImageUploader } from '@/components/admin/ImageUploader'
 import type { Producto, Categoria, Proveedor, Variante } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -56,7 +55,6 @@ function generarSlug(nombre: string): string {
 export function ProductoForm({ mode, producto, categorias, proveedores }: ProductoFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Form state
   const [nombre, setNombre] = useState(producto?.nombre ?? '')
@@ -91,9 +89,6 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
   const [vPrecio, setVPrecio] = useState('0')
   const [vDisponible, setVDisponible] = useState(true)
 
-  // Image upload state
-  const [uploading, setUploading] = useState(false)
-
   // Feedback
   const [error, setError] = useState('')
   const [guardado, setGuardado] = useState(false)
@@ -115,35 +110,6 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
 
   const handleDescripcionCorta = (val: string) => {
     if (val.length <= 160) setDescripcionCorta(val)
-  }
-
-  const handleFileSelect = async (files: FileList | null) => {
-    if (!files || imagenes.length >= 5) return
-    setUploading(true)
-    const remaining = 5 - imagenes.length
-    const filesToUpload = Array.from(files).slice(0, remaining)
-
-    for (const file of filesToUpload) {
-      const fd = new FormData()
-      fd.set('file', file)
-      const result = await subirImagen(fd)
-      if (result.ok && result.url) {
-        setImagenes((prev) => [...prev, result.url!])
-      }
-    }
-    setUploading(false)
-  }
-
-  const removeImagen = (index: number) => {
-    setImagenes((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const swapImagenes = (a: number, b: number) => {
-    setImagenes((prev) => {
-      const next = [...prev]
-      ;[next[a], next[b]] = [next[b], next[a]]
-      return next
-    })
   }
 
   const addTag = (val: string) => {
@@ -415,74 +381,7 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
               Imágenes (máx 5)
             </h3>
-
-            {/* Upload zone */}
-            {imagenes.length < 5 && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 py-8 text-sm text-zinc-500 transition-colors hover:border-emerald-400 hover:text-emerald-400 dark:border-zinc-700"
-                disabled={uploading}
-              >
-                <Upload className="h-5 w-5" aria-hidden="true" />
-                {uploading ? 'Subiendo...' : 'Hacé clic para subir imágenes'}
-              </button>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files)}
-            />
-
-            {/* Preview grid */}
-            {imagenes.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                {imagenes.map((url, i) => (
-                  <div key={url} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                    <Image src={url} alt={`Imagen ${i + 1}`} fill className="object-cover" sizes="120px" />
-                    {i === 0 && (
-                      <span className="absolute left-1 top-1 rounded bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-zinc-950">
-                        Principal
-                      </span>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                      {i > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => swapImagenes(i, i - 1)}
-                          className="rounded bg-zinc-200 p-1 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200"
-                          aria-label="Mover izquierda"
-                        >
-                          <ArrowLeft className="h-3 w-3" />
-                        </button>
-                      )}
-                      {i < imagenes.length - 1 && (
-                        <button
-                          type="button"
-                          onClick={() => swapImagenes(i, i + 1)}
-                          className="rounded bg-zinc-200 p-1 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200"
-                          aria-label="Mover derecha"
-                        >
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeImagen(i)}
-                        className="rounded bg-red-500 p-1 text-white"
-                        aria-label="Eliminar imagen"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="mt-2 text-xs text-zinc-500">La primera imagen aparecerá en el catálogo</p>
+            <ImageUploader value={imagenes} onChange={setImagenes} max={5} />
           </div>
         </div>
 

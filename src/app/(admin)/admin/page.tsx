@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { obtenerMetricasDashboard } from '@/lib/actions/admin'
 import { StatsCard } from '@/components/admin/StatsCard'
 import { VentasChart } from '@/components/admin/VentasChart'
@@ -10,7 +10,7 @@ import Link from 'next/link'
 import type { EstadoPedido } from '@/types'
 
 export default async function AdminDashboard() {
-  const supabase = createClient()
+  const supabase = createServiceClient()
   const metricas = await obtenerMetricasDashboard()
 
   // Últimos 10 pedidos

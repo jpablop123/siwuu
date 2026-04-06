@@ -82,6 +82,8 @@ export interface Pedido {
   id: string
   numero: string
   user_id: string | null
+  token_acceso: string
+  numero_guia: string | null
   email_cliente: string
   nombre_cliente: string
   telefono_cliente: string

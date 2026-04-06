@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { formatCOP } from '@/lib/utils'
-import { Pagination } from '@/components/store/Pagination'
+import { PaginationControls } from '@/components/admin/PaginationControls'
 import Link from 'next/link'
 import { Check, Minus } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -34,7 +34,7 @@ interface Props {
 }
 
 export default async function AdminPedidosPage({ searchParams }: Props) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
   const { estado, q, page } = searchParams
   const currentPage = Math.max(1, parseInt(page || '1'))
 
@@ -59,7 +59,7 @@ export default async function AdminPedidosPage({ searchParams }: Props) {
   if (estado === 'urgentes') {
     query = query.in('estado', ['pendiente', 'pago_confirmado'])
   } else if (estado && estado !== 'todos') {
-    query = query.eq('estado', estado)
+    query = query.eq('estado', estado as import('@/types').EstadoPedido)
   }
 
   // Búsqueda
@@ -199,18 +199,7 @@ export default async function AdminPedidosPage({ searchParams }: Props) {
       </div>
 
       {/* Paginación */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        createHref={(p) => {
-          const params = new URLSearchParams()
-          if (estado) params.set('estado', estado)
-          if (q) params.set('q', q)
-          if (p > 1) params.set('page', p.toString())
-          const qs = params.toString()
-          return `/admin/pedidos${qs ? `?${qs}` : ''}`
-        }}
-      />
+      <PaginationControls totalItems={count ?? 0} perPage={PER_PAGE} />
     </div>
   )
 }

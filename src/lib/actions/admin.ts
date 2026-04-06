@@ -44,7 +44,7 @@ export async function obtenerMetricasDashboard(): Promise<{
 }> {
   const { supabase } = await verificarAdmin()
 
-  const estadosValidos = [
+  const estadosValidos: import('@/types').EstadoPedido[] = [
     'pago_confirmado',
     'procesando',
     'enviado_proveedor',
@@ -122,7 +122,7 @@ export async function obtenerMetricasDashboard(): Promise<{
 // Pedidos
 // ---------------------------------------------------------------------------
 
-const ESTADOS_VALIDOS = [
+const ESTADOS_VALIDOS: import('@/types').EstadoPedido[] = [
   'pago_confirmado',
   'procesando',
   'enviado_proveedor',
@@ -138,7 +138,7 @@ export async function actualizarEstadoPedido(
 ): Promise<{ ok?: boolean; error?: string }> {
   const { supabase } = await verificarAdmin()
 
-  if (!ESTADOS_VALIDOS.includes(nuevoEstado)) {
+  if (!(ESTADOS_VALIDOS as string[]).includes(nuevoEstado)) {
     return { error: 'Estado inválido' }
   }
 
@@ -168,12 +168,63 @@ export async function actualizarEstadoPedido(
         email: pedido.email_cliente,
         nombre: pedido.nombre_cliente,
         numeroPedido: pedido.numero,
+        pedidoId,
         nuevoEstado,
         numeroGuia: numeroGuia ?? pedido.numero_guia,
       })
     }
-  } catch (emailError) {
-    console.error('Error enviando email de estado:', emailError)
+  } catch {
+    // El error ya queda registrado en logs_notificaciones por enviarEmailActualizacionEstado
+  }
+
+  revalidatePath('/admin/pedidos')
+  revalidatePath(`/admin/pedidos/${pedidoId}`)
+  revalidatePath('/cuenta/pedidos')
+  return { ok: true }
+}
+
+export async function cancelarPedidoAction(
+  pedidoId: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const { supabase } = await verificarAdmin()
+
+  // Verificar que el pedido existe y se puede cancelar
+  const { data: pedido, error: fetchError } = await supabase
+    .from('pedidos')
+    .select('id, numero, nombre_cliente, email_cliente, estado')
+    .eq('id', pedidoId)
+    .single()
+
+  if (fetchError || !pedido) return { error: 'Pedido no encontrado' }
+
+  const ESTADOS_NO_CANCELABLES = ['entregado', 'cancelado']
+  if (ESTADOS_NO_CANCELABLES.includes(pedido.estado)) {
+    return { error: `No se puede cancelar un pedido en estado "${pedido.estado}"` }
+  }
+
+  // Restaurar stock antes de cancelar
+  const { error: stockError } = await supabase.rpc('restaurar_stock', { p_pedido_id: pedidoId })
+  if (stockError) return { error: `Error al restaurar stock: ${stockError.message}` }
+
+  // Actualizar estado
+  const { error: updateError } = await supabase
+    .from('pedidos')
+    .update({ estado: 'cancelado', updated_at: new Date().toISOString() })
+    .eq('id', pedidoId)
+
+  if (updateError) return { error: updateError.message }
+
+  // Email — best effort (los fallos quedan en logs_notificaciones)
+  try {
+    await enviarEmailActualizacionEstado({
+      email: pedido.email_cliente,
+      nombre: pedido.nombre_cliente,
+      numeroPedido: pedido.numero,
+      pedidoId,
+      nuevoEstado: 'cancelado',
+    })
+  } catch {
+    // ignorar — ya persistido en BD por el helper
   }
 
   revalidatePath('/admin/pedidos')
@@ -209,12 +260,12 @@ export async function subirImagen(
   const path = `productos/${Date.now()}-${nombreLimpio}`
 
   const { error: uploadError } = await supabase.storage
-    .from('productos')
+    .from('productos_imagenes')
     .upload(path, file, { contentType: file.type })
 
   if (uploadError) return { error: uploadError.message }
 
-  const { data } = supabase.storage.from('productos').getPublicUrl(path)
+  const { data } = supabase.storage.from('productos_imagenes').getPublicUrl(path)
   return { ok: true, url: data.publicUrl }
 }
 
@@ -648,5 +699,132 @@ export async function eliminarProveedor(id: string): Promise<{ ok?: boolean; err
   if (error) return { error: error.message }
 
   revalidatePath('/admin/proveedores')
+  return { ok: true }
+}
+
+// ---------------------------------------------------------------------------
+// CMS — Banners del Hero
+// ---------------------------------------------------------------------------
+
+export interface BannerHeroInput {
+  titulo: string
+  subtitulo?: string | null
+  tag?: string | null
+  imagen_url: string
+  cta_label: string
+  cta_href: string
+  cta_secundario_label?: string | null
+  cta_secundario_href?: string | null
+  align: 'left' | 'center'
+  orden?: number
+  activo?: boolean
+}
+
+export async function crearBannerHero(
+  data: BannerHeroInput
+): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const { supabase } = await verificarAdmin()
+
+  if (!data.titulo?.trim()) return { ok: false, error: 'Título requerido' }
+  if (!data.imagen_url?.trim()) return { ok: false, error: 'Imagen requerida' }
+
+  const { data: row, error } = await supabase
+    .from('tienda_banners')
+    .insert({
+      titulo: data.titulo.trim(),
+      subtitulo: data.subtitulo?.trim() || null,
+      tag: data.tag?.trim() || null,
+      imagen_url: data.imagen_url.trim(),
+      cta_label: data.cta_label?.trim() || 'Ver catálogo',
+      cta_href: data.cta_href?.trim() || '/productos',
+      cta_secundario_label: data.cta_secundario_label?.trim() || null,
+      cta_secundario_href: data.cta_secundario_href?.trim() || null,
+      align: data.align,
+      orden: data.orden ?? 0,
+      activo: data.activo !== false,
+    })
+    .select('id')
+    .single()
+
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/')
+  revalidatePath('/admin/apariencia')
+  return { ok: true, id: row?.id }
+}
+
+export async function actualizarBannerHero(
+  id: string,
+  data: Partial<BannerHeroInput>
+): Promise<{ ok: boolean; error?: string }> {
+  const { supabase } = await verificarAdmin()
+
+  const patch: Record<string, unknown> = {}
+  if (data.titulo !== undefined)               patch.titulo               = data.titulo.trim()
+  if (data.subtitulo !== undefined)            patch.subtitulo            = data.subtitulo?.trim() || null
+  if (data.tag !== undefined)                  patch.tag                  = data.tag?.trim() || null
+  if (data.imagen_url !== undefined)           patch.imagen_url           = data.imagen_url.trim()
+  if (data.cta_label !== undefined)            patch.cta_label            = data.cta_label.trim()
+  if (data.cta_href !== undefined)             patch.cta_href             = data.cta_href.trim()
+  if (data.cta_secundario_label !== undefined) patch.cta_secundario_label = data.cta_secundario_label?.trim() || null
+  if (data.cta_secundario_href !== undefined)  patch.cta_secundario_href  = data.cta_secundario_href?.trim() || null
+  if (data.align !== undefined)                patch.align                = data.align
+  if (data.orden !== undefined)                patch.orden                = data.orden
+  if (data.activo !== undefined)               patch.activo               = data.activo
+
+  const { error } = await supabase.from('tienda_banners').update(patch).eq('id', id)
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/')
+  revalidatePath('/admin/apariencia')
+  return { ok: true }
+}
+
+export async function eliminarBannerHero(id: string): Promise<{ ok: boolean; error?: string }> {
+  const { supabase } = await verificarAdmin()
+  const { error } = await supabase.from('tienda_banners').delete().eq('id', id)
+  if (error) return { ok: false, error: error.message }
+  revalidatePath('/')
+  revalidatePath('/admin/apariencia')
+  return { ok: true }
+}
+
+// ---------------------------------------------------------------------------
+// CMS — Configuración del Promo Banner (singleton)
+// ---------------------------------------------------------------------------
+
+export interface ConfiguracionTiendaInput {
+  promo_tag: string
+  promo_titulo: string
+  promo_descripcion?: string | null
+  promo_descuento: string
+  promo_cta_label: string
+  promo_cta_href: string
+  promo_imagen?: string | null
+}
+
+export async function actualizarConfiguracionTienda(
+  data: ConfiguracionTiendaInput
+): Promise<{ ok: boolean; error?: string }> {
+  const { supabase } = await verificarAdmin()
+
+  const { error } = await supabase
+    .from('tienda_configuracion')
+    .upsert({
+      id: true,
+      promo_tag:         data.promo_tag.trim()          || 'Colección exclusiva',
+      promo_titulo:      data.promo_titulo.trim()       || 'Oferta especial',
+      promo_descripcion: data.promo_descripcion?.trim() || null,
+      promo_descuento:   data.promo_descuento.trim()    || '20% OFF',
+      promo_cta_label:   data.promo_cta_label.trim()    || 'Comprar ahora',
+      promo_cta_href:    data.promo_cta_href.trim()     || '/productos',
+      promo_imagen:      data.promo_imagen?.trim()      || null,
+      updated_at:        new Date().toISOString(),
+    })
+
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath('/')
+  revalidatePath('/admin/apariencia')
   return { ok: true }
 }

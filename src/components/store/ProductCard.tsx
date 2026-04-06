@@ -43,13 +43,14 @@ export function ProductCard({ producto }: ProductCardProps) {
     <Link href={`/productos/${producto.slug}`} className="group">
       <article className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-[0_0_15px_rgba(0,0,0,0.02)] transition-all duration-300 hover:border-emerald-500/50 hover:shadow-card-hover dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_0_15px_rgba(255,255,255,0.02)]">
         {/* Imagen */}
+        {/* Contenedor siempre bg-white — fotos con fondo blanco se ven como catálogo profesional en dark mode */}
         <div className="relative aspect-square overflow-hidden bg-white">
           {imagen ? (
             <Image
               src={imagen}
               alt={producto.nombre}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (

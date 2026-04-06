@@ -6,14 +6,17 @@ import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Price } from '@/components/store/Price'
 import Link from 'next/link'
 import type { Pedido, PedidoItem } from '@/types'
+import { PostCheckoutRegister } from './PostCheckoutRegister'
 
 type PedidoConItems = Pedido & { items: PedidoItem[] }
 
 interface Props {
   pedidoInicial: PedidoConItems
+  /** true cuando el acceso fue validado por cookie de invitado (no por user_id) */
+  isGuest?: boolean
 }
 
-export function PedidoEstado({ pedidoInicial }: Props) {
+export function PedidoEstado({ pedidoInicial, isGuest = false }: Props) {
   const [pedido, setPedido] = useState<PedidoConItems>(pedidoInicial)
   const [timeout, setTimeoutReached] = useState(false)
 
@@ -142,6 +145,11 @@ export function PedidoEstado({ pedidoInicial }: Props) {
           <p>Envío a: {pedido.direccion_envio}, {pedido.ciudad}</p>
         </div>
       </div>
+
+      {/* CTA de registro — solo para invitados, una vez confirmado el pago */}
+      {isGuest && (
+        <PostCheckoutRegister email={pedido.email_cliente} />
+      )}
 
       <div className="mt-6 flex justify-center gap-4">
         <Link

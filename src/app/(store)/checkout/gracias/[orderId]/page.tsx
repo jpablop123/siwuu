@@ -9,8 +9,6 @@ interface Props {
 }
 
 export default async function GraciasPage({ params }: Props) {
-  // Usar service client para leer el pedido sin restricción de RLS.
-  // La validación de acceso se hace manualmente abajo.
   const serviceClient = createServiceClient()
   const supabase = createClient()
 
@@ -24,37 +22,46 @@ export default async function GraciasPage({ params }: Props) {
   ])
 
   if (!pedido) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold">Pedido no encontrado</h1>
-        <Link href="/" className="mt-4 inline-block text-emerald-400 hover:underline">
-          Volver al inicio
-        </Link>
-      </div>
-    )
+    return <PedidoNoEncontrado />
   }
 
-  // Validación de acceso:
-  // 1. Usuario autenticado que es dueño del pedido
-  // 2. Invitado que tiene la cookie httpOnly del pedido
+  // ── Validación de acceso ─────────────────────────────────────────────
+  //
+  // Caso 1: usuario autenticado propietario del pedido.
+  // Caso 2: invitado cuya cookie contiene el token_acceso exacto
+  //         generado en BD al crear el pedido (UUID criptográfico,
+  //         NO simplemente la presencia de la cookie).
+  //
+  // Cualquier otro caso → 404 genérico (no revela si el pedido existe).
+  // ─────────────────────────────────────────────────────────────────────
   const cookieStore = cookies()
   const guestCookie = cookieStore.get(`guest_pedido_${params.orderId}`)
 
-  const esOwner = user && pedido.user_id === user.id
-  const esInvitado = !pedido.user_id && !!guestCookie
+  const esOwner   = !!user && pedido.user_id === user.id
+  const esInvitado =
+    !pedido.user_id &&
+    !!guestCookie?.value &&
+    guestCookie.value === pedido.token_acceso   // ← comparación exacta del token
 
   if (!esOwner && !esInvitado) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold">Pedido no encontrado</h1>
-        <Link href="/" className="mt-4 inline-block text-emerald-400 hover:underline">
-          Volver al inicio
-        </Link>
-      </div>
-    )
+    return <PedidoNoEncontrado />
   }
 
   return (
-    <PedidoEstado pedidoInicial={pedido as Pedido & { items: PedidoItem[] }} />
+    <PedidoEstado
+      pedidoInicial={pedido as Pedido & { items: PedidoItem[] }}
+      isGuest={esInvitado}
+    />
+  )
+}
+
+function PedidoNoEncontrado() {
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="text-2xl font-bold">Pedido no encontrado</h1>
+      <Link href="/" className="mt-4 inline-block text-emerald-400 hover:underline">
+        Volver al inicio
+      </Link>
+    </div>
   )
 }

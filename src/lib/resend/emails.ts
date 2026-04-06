@@ -1,5 +1,31 @@
 import { resend, FROM_EMAIL, buildEmailBase, buildTablaItems } from './client'
 import { formatCOP } from '@/lib/utils'
+import { createServiceClient } from '@/lib/supabase/server'
+
+// ---------------------------------------------------------------------------
+// Helper interno: persiste fallos de email en logs_notificaciones
+// ---------------------------------------------------------------------------
+
+async function logEmailError(params: {
+  pedidoId?: string | null
+  tipoEmail: string
+  emailDestinatario: string
+  error: unknown
+}) {
+  const proveedorError = params.error instanceof Error ? params.error.message : String(params.error)
+  try {
+    const supabase = createServiceClient()
+    await supabase.from('logs_notificaciones').insert({
+      pedido_id: params.pedidoId ?? null,
+      tipo_email: params.tipoEmail,
+      email_destinatario: params.emailDestinatario,
+      proveedor_error: proveedorError,
+    })
+  } catch (dbErr) {
+    // Último recurso — si también falla el log, al menos queda en consola
+    console.error('[logEmailError] No se pudo persistir el fallo:', dbErr)
+  }
+}
 
 // ---------------------------------------------------------------------------
 // EMAIL 1: Confirmación de pedido
@@ -9,6 +35,7 @@ export async function enviarEmailConfirmacionPedido(params: {
   email: string
   nombre: string
   numeroPedido: string
+  pedidoId?: string
   items: Array<{
     nombre: string
     variante?: string | null
@@ -92,7 +119,7 @@ export async function enviarEmailConfirmacionPedido(params: {
     return { ok: true }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error desconocido'
-    console.error('Error enviando email de confirmaci\u00f3n:', msg)
+    await logEmailError({ pedidoId: params.pedidoId, tipoEmail: 'confirmacion', emailDestinatario: params.email, error: e })
     return { ok: false, error: msg }
   }
 }
@@ -133,6 +160,7 @@ export async function enviarEmailActualizacionEstado(params: {
   email: string
   nombre: string
   numeroPedido: string
+  pedidoId?: string
   nuevoEstado: string
   numeroGuia?: string | null
 }): Promise<{ ok: boolean; error?: string }> {
@@ -196,7 +224,7 @@ export async function enviarEmailActualizacionEstado(params: {
     return { ok: true }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error desconocido'
-    console.error('Error enviando email de actualizaci\u00f3n:', msg)
+    await logEmailError({ pedidoId: params.pedidoId, tipoEmail: `actualizacion_estado:${params.nuevoEstado}`, emailDestinatario: params.email, error: e })
     return { ok: false, error: msg }
   }
 }
@@ -252,7 +280,7 @@ export async function enviarEmailBienvenida(params: {
     return { ok: true }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error desconocido'
-    console.error('Error enviando email de bienvenida:', msg)
+    await logEmailError({ pedidoId: null, tipoEmail: 'bienvenida', emailDestinatario: params.email, error: e })
     return { ok: false, error: msg }
   }
 }

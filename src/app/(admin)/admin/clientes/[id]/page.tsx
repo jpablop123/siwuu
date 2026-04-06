@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { formatCOP } from '@/lib/utils'
 import { StatsCard } from '@/components/admin/StatsCard'
 import { EstadoPedidoBadge } from '@/components/ui/Badge'
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default async function AdminClienteDetallePage({ params }: Props) {
-  const supabase = createClient()
+  const supabase = createServiceClient()
 
   const { data: perfil } = await supabase
     .from('profiles')

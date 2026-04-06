@@ -86,9 +86,18 @@ export function CheckoutForm() {
     setError(null)
 
     try {
+      // Pasar el token explícitamente para garantizar que el route handler
+      // pueda identificar al usuario incluso si las cookies no se leen correctamente
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           ...form,
           items: items.map((item) => ({

@@ -43,10 +43,16 @@ export async function POST(request: Request) {
     const serviceClient = createServiceClient()
 
     // 1. Paralelo: número de pedido + auth
-    const [{ data: numPedido }, { data: { user } }] = await Promise.all([
+    // Intentar autenticar via Authorization header primero (más confiable desde el browser),
+    // fallback a cookies de sesión
+    const authHeader = request.headers.get('Authorization')
+    const [{ data: numPedido }, authResult] = await Promise.all([
       serviceClient.rpc('generar_numero_pedido'),
-      supabase.auth.getUser(),
+      authHeader?.startsWith('Bearer ')
+        ? serviceClient.auth.getUser(authHeader.slice(7))
+        : supabase.auth.getUser(),
     ])
+    const { user } = authResult.data
     const numero = (numPedido as string) || `PED-${Date.now()}`
 
     // 2. Crear pedido

@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import type { CartItem } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -22,17 +23,58 @@ interface CartActions {
   abrirCarrito: () => void
   cerrarCarrito: () => void
   toggleCarrito: () => void
+  sincronizarAlLogin: (userId: string) => Promise<void>
+  limpiarAlLogout: () => void
 }
 
 type CartStore = CartState & CartActions
 
+const INITIAL_STATE: CartState = { items: [], isOpen: false }
+
 // ---------------------------------------------------------------------------
-// Estado inicial (lo que se renderiza en SSR antes de hidratar)
+// Helpers Supabase — sync en background
 // ---------------------------------------------------------------------------
 
-const INITIAL_STATE: CartState = {
-  items: [],
-  isOpen: false,
+function itemToRow(item: CartItem, userId: string) {
+  return {
+    user_id: userId,
+    producto_id: item.productoId,
+    nombre: item.nombre,
+    precio: item.precio,
+    imagen: item.imagen,
+    variante: item.variante ?? null,
+    cantidad: item.cantidad,
+  }
+}
+
+async function upsertItemRemoto(item: CartItem, userId: string) {
+  const supabase = createClient()
+  await supabase.from('carrito_items').upsert(itemToRow(item, userId), {
+    onConflict: 'user_id,producto_id,variante',
+  })
+}
+
+async function eliminarItemRemoto(productoId: string, variante: string | undefined, userId: string) {
+  const supabase = createClient()
+  let query = supabase
+    .from('carrito_items')
+    .delete()
+    .eq('user_id', userId)
+    .eq('producto_id', productoId)
+
+  if (variante) {
+    query = query.eq('variante', variante)
+  } else {
+    query = query.is('variante', null)
+  }
+
+  await query
+}
+
+function syncConUsuario(fn: (userId: string) => void) {
+  createClient()
+    .auth.getUser()
+    .then(({ data }) => { if (data.user) fn(data.user.id) })
 }
 
 // ---------------------------------------------------------------------------
@@ -50,26 +92,30 @@ export const useCartStore = create<CartStore>()(
           (i) => i.productoId === item.productoId && i.variante === item.variante
         )
 
+        let nuevoItem: CartItem
         if (existente) {
+          nuevoItem = { ...existente, cantidad: existente.cantidad + item.cantidad }
           set({
-            items: items.map((i) =>
-              i.id === existente.id
-                ? { ...i, cantidad: i.cantidad + item.cantidad }
-                : i
-            ),
+            items: items.map((i) => i.id === existente.id ? nuevoItem : i),
             isOpen: true,
           })
         } else {
-          const id = `${item.productoId}-${item.variante ?? 'default'}-${Date.now()}`
-          set({
-            items: [...items, { ...item, id }],
-            isOpen: true,
-          })
+          nuevoItem = {
+            ...item,
+            id: `${item.productoId}-${item.variante ?? 'default'}-${Date.now()}`,
+          }
+          set({ items: [...items, nuevoItem], isOpen: true })
         }
+
+        syncConUsuario((uid) => upsertItemRemoto(nuevoItem, uid))
       },
 
       quitarItem: (id) => {
+        const item = get().items.find((i) => i.id === id)
         set({ items: get().items.filter((i) => i.id !== id) })
+        if (item) {
+          syncConUsuario((uid) => eliminarItemRemoto(item.productoId, item.variante, uid))
+        }
       },
 
       cambiarCantidad: (id, cantidad) => {
@@ -77,22 +123,66 @@ export const useCartStore = create<CartStore>()(
           get().quitarItem(id)
           return
         }
-        set({
-          items: get().items.map((i) =>
-            i.id === id ? { ...i, cantidad } : i
-          ),
-        })
+        const items = get().items.map((i) => i.id === id ? { ...i, cantidad } : i)
+        set({ items })
+        const item = items.find((i) => i.id === id)
+        if (item) syncConUsuario((uid) => upsertItemRemoto(item, uid))
       },
 
       vaciarCarrito: () => set({ items: [] }),
       abrirCarrito: () => set({ isOpen: true }),
       cerrarCarrito: () => set({ isOpen: false }),
       toggleCarrito: () => set((s) => ({ isOpen: !s.isOpen })),
+
+      // Al login: merge carrito local (prioridad) con Supabase
+      sincronizarAlLogin: async (userId) => {
+        const supabase = createClient()
+        const itemsLocales = get().items
+
+        const { data: itemsRemotos } = await supabase
+          .from('carrito_items')
+          .select('*')
+          .eq('user_id', userId)
+
+        if (!itemsRemotos) return
+
+        const mergeado: CartItem[] = [...itemsLocales]
+
+        for (const remoto of itemsRemotos) {
+          const existeLocal = itemsLocales.find(
+            (l) => l.productoId === remoto.producto_id &&
+              (l.variante ?? null) === (remoto.variante ?? null)
+          )
+          if (!existeLocal) {
+            mergeado.push({
+              id: `${remoto.producto_id}-${remoto.variante ?? 'default'}-${remoto.id}`,
+              productoId: remoto.producto_id,
+              nombre: remoto.nombre,
+              precio: Number(remoto.precio),
+              imagen: remoto.imagen ?? '',
+              variante: remoto.variante ?? undefined,
+              cantidad: remoto.cantidad,
+            })
+          }
+        }
+
+        set({ items: mergeado })
+
+        // Persistir estado mergeado en Supabase
+        if (mergeado.length > 0) {
+          await supabase
+            .from('carrito_items')
+            .upsert(mergeado.map((i) => itemToRow(i, userId)), {
+              onConflict: 'user_id,producto_id,variante',
+            })
+        }
+      },
+
+      limpiarAlLogout: () => set({ items: [], isOpen: false }),
     }),
     {
       name: 'siwuushop-cart',
       storage: createJSONStorage(() => localStorage),
-      // Solo persistir items — isOpen es estado transitorio
       partialize: (state) => ({ items: state.items }),
     }
   )
@@ -101,58 +191,25 @@ export const useCartStore = create<CartStore>()(
 // ---------------------------------------------------------------------------
 // Hook con protección contra hidratación
 // ---------------------------------------------------------------------------
-// Problema: Zustand con persist lee de localStorage tras el mount,
-// lo que causa un mismatch entre el HTML del SSR (items=[]) y el
-// HTML tras la hidratación (items=[...localStorage]).
-//
-// Solución: useCart() retorna el estado inicial durante el SSR y el
-// primer render del cliente, y solo después de la hidratación usa
-// el estado real del store (que ya tiene los datos de localStorage).
-// ---------------------------------------------------------------------------
 
-/**
- * Hook principal del carrito — SEGURO para SSR.
- * Retorna items=[] en el servidor y primer render,
- * y el estado real de localStorage después de montar.
- */
 export function useCart() {
   const store = useCartStore()
   const [hydrated, setHydrated] = useState(false)
 
-  useEffect(() => {
-    setHydrated(true)
-  }, [])
+  useEffect(() => { setHydrated(true) }, [])
 
   if (!hydrated) {
-    return {
-      ...store,
-      // Sobreescribir datos que vienen de localStorage
-      // con valores iniciales para que el SSR coincida
-      items: INITIAL_STATE.items,
-      isOpen: INITIAL_STATE.isOpen,
-    }
+    return { ...store, items: INITIAL_STATE.items, isOpen: INITIAL_STATE.isOpen }
   }
 
   return store
 }
 
-// ---------------------------------------------------------------------------
-// Selectores computados — también protegidos contra hidratación
-// ---------------------------------------------------------------------------
-
-/**
- * Total del carrito en COP (suma de precio * cantidad por item).
- * Retorna 0 durante SSR.
- */
 export function useCartTotal(): number {
   const { items } = useCart()
   return items.reduce((sum, item) => sum + item.precio * item.cantidad, 0)
 }
 
-/**
- * Cantidad total de items en el carrito (suma de cantidades).
- * Retorna 0 durante SSR.
- */
 export function useCartCount(): number {
   const { items } = useCart()
   return items.reduce((sum, item) => sum + item.cantidad, 0)

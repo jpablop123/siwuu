@@ -26,16 +26,19 @@ export async function POST(request: Request) {
   // Paso 2 — Verificar firma ANTES de parsear
   // ───────────────────────────────────────────────────────────
   const integritySecret = process.env.WOMPI_EVENTS_SECRET
-  if (integritySecret) {
-    const checksum = request.headers.get('x-event-checksum')
-    if (!checksum) {
-      return new Response('Unauthorized', { status: 401 })
-    }
-    const hashEsperado = await sha256(bodyTexto + integritySecret)
-    if (checksum !== hashEsperado) {
-      console.error('Webhook: firma inválida')
-      return new Response('Unauthorized', { status: 401 })
-    }
+  if (!integritySecret) {
+    console.error('Webhook: WOMPI_EVENTS_SECRET no configurado')
+    return new Response('Internal Server Error', { status: 500 })
+  }
+
+  const checksum = request.headers.get('x-event-checksum')
+  if (!checksum) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+  const hashEsperado = await sha256(bodyTexto + integritySecret)
+  if (checksum !== hashEsperado) {
+    console.error('Webhook: firma inválida')
+    return new Response('Unauthorized', { status: 401 })
   }
 
   // ───────────────────────────────────────────────────────────

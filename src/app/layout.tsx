@@ -4,6 +4,7 @@ import './globals.css'
 import { CartDrawer } from '@/components/store/CartDrawer'
 import { ToastContainer } from '@/components/ui/Toast'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { AuthCartSync } from '@/components/AuthCartSync'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -50,6 +51,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <ThemeProvider>
+          <AuthCartSync />
           {children}
           <CartDrawer />
           <ToastContainer />

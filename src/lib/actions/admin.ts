@@ -618,6 +618,7 @@ export async function actualizarProveedor(
   const notas = formData.get('notas')?.toString().trim() || null
 
   if (!nombre) return { error: 'Nombre es requerido' }
+  if (email && !EMAIL_REGEX.test(email)) return { error: 'Email del proveedor inválido' }
 
   const { error } = await supabase
     .from('proveedores')

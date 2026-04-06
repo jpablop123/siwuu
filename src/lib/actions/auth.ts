@@ -59,8 +59,8 @@ export async function iniciarSesion(
 
   if (error) return { error: 'Email o contraseña incorrectos' }
 
-  // Si hay redirectTo explícito, usarlo directamente
-  if (redirectTo) {
+  // Si hay redirectTo explícito, validar que sea una ruta relativa (previene open redirect)
+  if (redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')) {
     revalidatePath('/', 'layout')
     redirect(redirectTo)
   }

@@ -61,6 +61,7 @@ export default async function AdminProductosPage({ searchParams }: Props) {
     imagenes: string[]
     precio_venta: number
     precio_costo: number | null
+    stock_virtual: number
     activo: boolean
     destacado: boolean
     categoria: { nombre: string } | null
@@ -134,6 +135,17 @@ export default async function AdminProductosPage({ searchParams }: Props) {
                       {margen}%
                     </span>
                   )}
+                  <span
+                    className={`text-xs ${
+                      p.stock_virtual === 0
+                        ? 'font-medium text-red-500'
+                        : p.stock_virtual <= 5
+                          ? 'font-medium text-amber-500'
+                          : 'text-zinc-500'
+                    }`}
+                  >
+                    Stock: {p.stock_virtual}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Link
@@ -167,6 +179,7 @@ export default async function AdminProductosPage({ searchParams }: Props) {
                 <th className="px-4 py-3 text-right">Precio</th>
                 <th className="px-4 py-3 text-right">Costo</th>
                 <th className="px-4 py-3 text-right">Margen</th>
+                <th className="px-4 py-3 text-right">Stock</th>
                 <th className="px-4 py-3 text-center">Activo</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -228,6 +241,19 @@ export default async function AdminProductosPage({ searchParams }: Props) {
                         <span className="text-zinc-500">—</span>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <span
+                        className={
+                          p.stock_virtual === 0
+                            ? 'font-medium text-red-500'
+                            : p.stock_virtual <= 5
+                              ? 'font-medium text-amber-500'
+                              : 'text-zinc-700 dark:text-zinc-300'
+                        }
+                      >
+                        {p.stock_virtual}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <ToggleActivo id={p.id} activo={p.activo} />
                     </td>
@@ -247,7 +273,7 @@ export default async function AdminProductosPage({ searchParams }: Props) {
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">
                     No se encontraron productos
                   </td>
                 </tr>

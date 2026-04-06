@@ -115,6 +115,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/wompi|api/auth/logout|api/exchange-rate).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/wompi|api/auth/logout|api/auth/check-email|api/exchange-rate).*)',
   ],
 }

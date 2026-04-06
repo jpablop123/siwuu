@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ShoppingCart, Minus, Plus, Check } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ShoppingCart, Minus, Plus, Check, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCart } from '@/lib/cart/store'
 import { useToast } from '@/components/ui/Toast'
@@ -20,6 +21,7 @@ export function AddToCartForm({ producto, variantes }: AddToCartFormProps) {
   const [added, setAdded] = useState(false)
   const { agregarItem } = useCart()
   const addToast = useToast((s) => s.addToast)
+  const router = useRouter()
 
   // Agrupar variantes por nombre (Color, Talla, etc.)
   const grupos = useMemo(() => {
@@ -51,28 +53,38 @@ export function AddToCartForm({ producto, variantes }: AddToCartFormProps) {
     setSeleccionadas((prev) => ({ ...prev, [nombre]: valor }))
   }
 
-  const handleAgregar = () => {
-    if (!todasSeleccionadas) {
-      addToast('Selecciona todas las opciones', 'error')
-      return
-    }
-
+  const buildItem = () => {
     const varianteTexto = Object.entries(seleccionadas)
       .map(([k, v]) => `${k}: ${v}`)
       .join(', ')
-
-    agregarItem({
+    return {
       productoId: producto.id,
       nombre: producto.nombre,
       precio: precioCalculado,
       imagen: producto.imagenes[0] || '',
       variante: varianteTexto || undefined,
       cantidad,
-    })
+    }
+  }
 
+  const handleAgregar = () => {
+    if (!todasSeleccionadas) {
+      addToast('Selecciona todas las opciones', 'error')
+      return
+    }
+    agregarItem(buildItem())
     setAdded(true)
     addToast('Producto agregado al carrito')
     setTimeout(() => setAdded(false), 2000)
+  }
+
+  const handleComprarAhora = () => {
+    if (!todasSeleccionadas) {
+      addToast('Selecciona todas las opciones', 'error')
+      return
+    }
+    agregarItem(buildItem())
+    router.push('/checkout')
   }
 
   return (
@@ -131,47 +143,59 @@ export function AddToCartForm({ producto, variantes }: AddToCartFormProps) {
         </div>
       )}
 
-      {/* Selector de cantidad + botón agregar */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-700">
-          <button
-            type="button"
-            onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-            className="rounded-l-xl px-3 py-2.5 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            aria-label="Reducir cantidad"
+      {/* Selector de cantidad + botones */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <button
+              type="button"
+              onClick={() => setCantidad(Math.max(1, cantidad - 1))}
+              className="rounded-l-xl px-3 py-2.5 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              aria-label="Reducir cantidad"
+            >
+              <Minus className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <span className="min-w-[3ch] select-none text-center text-sm font-semibold">
+              {cantidad}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCantidad(cantidad + 1)}
+              className="rounded-r-xl px-3 py-2.5 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              aria-label="Aumentar cantidad"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+
+          <Button
+            onClick={handleAgregar}
+            size="lg"
+            variant="outline"
+            className={cn('flex-1', added && 'border-green-500 text-green-500')}
+            disabled={added}
           >
-            <Minus className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <span className="min-w-[3ch] select-none text-center text-sm font-semibold">
-            {cantidad}
-          </span>
-          <button
-            type="button"
-            onClick={() => setCantidad(cantidad + 1)}
-            className="rounded-r-xl px-3 py-2.5 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            aria-label="Aumentar cantidad"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-          </button>
+            {added ? (
+              <>
+                <Check className="h-5 w-5" aria-hidden="true" />
+                Agregado!
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+                Agregar al carrito
+              </>
+            )}
+          </Button>
         </div>
 
         <Button
-          onClick={handleAgregar}
+          onClick={handleComprarAhora}
           size="lg"
-          className={cn('flex-1', added && 'bg-green-600 hover:bg-green-700')}
-          disabled={added}
+          className="w-full"
         >
-          {added ? (
-            <>
-              <Check className="h-5 w-5" aria-hidden="true" />
-              Agregado!
-            </>
-          ) : (
-            <>
-              <ShoppingCart className="h-5 w-5" aria-hidden="true" />
-              Agregar al carrito
-            </>
-          )}
+          <Zap className="h-5 w-5" aria-hidden="true" />
+          Comprar ahora
         </Button>
       </div>
     </div>

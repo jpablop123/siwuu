@@ -101,16 +101,17 @@ export async function construirURLCheckout(params: CheckoutParams): Promise<stri
 
   const hash = await generarHashIntegridad(referencia, montoEnCentavos, moneda, integritySecret)
 
-  const queryParams = new URLSearchParams({
-    'public-key': publicKey,
-    currency: moneda,
-    'amount-in-cents': montoEnCentavos.toString(),
-    reference: referencia,
-    'redirect-url': redirectUrl,
-    'signature:integrity': hash,
-  })
+  // Construir manualmente para preservar "signature:integrity" sin codificar el ":"
+  const qs = [
+    `public-key=${encodeURIComponent(publicKey)}`,
+    `currency=${moneda}`,
+    `amount-in-cents=${montoEnCentavos}`,
+    `reference=${encodeURIComponent(referencia)}`,
+    `redirect-url=${encodeURIComponent(redirectUrl)}`,
+    `signature:integrity=${hash}`,
+  ].join('&')
 
-  return `${WOMPI_CHECKOUT_URL}?${queryParams.toString()}`
+  return `${WOMPI_CHECKOUT_URL}?${qs}`
 }
 
 // ---------------------------------------------------------------------------

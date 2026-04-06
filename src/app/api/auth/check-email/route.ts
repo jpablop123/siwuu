@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { rlEmailCheck } from '@/lib/ratelimit'
 
 /**
  * POST /api/auth/check-email
@@ -11,6 +12,14 @@ import { NextResponse } from 'next/server'
  */
 export async function POST(request: Request) {
   try {
+    const rl = await rlEmailCheck(request)
+    if (!rl.ok) {
+      return NextResponse.json({ hasAccount: false }, {
+        status: 429,
+        headers: { 'Retry-After': String(rl.retryAfter) },
+      })
+    }
+
     const { email } = await request.json() as { email?: string }
     if (!email || !email.includes('@')) {
       return NextResponse.json({ hasAccount: false })

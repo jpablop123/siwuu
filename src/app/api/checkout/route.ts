@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { procesarPedido, type PedidoItemInput } from '@/lib/services/pedidos.service'
+import { rlCheckout } from '@/lib/ratelimit'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
@@ -17,6 +18,14 @@ function getAppUrl(request: Request): string {
  */
 export async function POST(request: Request) {
   try {
+    const rl = await rlCheckout(request)
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Demasiadas solicitudes. Intentá de nuevo en unos minutos.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+      )
+    }
+
     const body = await request.json() as {
       nombre: string
       email: string

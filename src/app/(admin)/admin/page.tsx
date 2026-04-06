@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { obtenerMetricasDashboard } from '@/lib/actions/admin'
 import { StatsCard } from '@/components/admin/StatsCard'
 import { VentasChart } from '@/components/admin/VentasChart'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { formatCOP } from '@/lib/utils'
 import { EstadoPedidoBadge } from '@/components/ui/Badge'
 import { DollarSign, ShoppingCart, AlertTriangle, Users } from 'lucide-react'
@@ -66,7 +67,9 @@ export default async function AdminDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 lg:col-span-2">
           <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Ventas últimos 30 días</h2>
-          <VentasChart data={metricas.ventasPorDia} />
+          <ErrorBoundary label="Error al cargar el gráfico de ventas">
+            <VentasChart data={metricas.ventasPorDia} />
+          </ErrorBoundary>
         </div>
 
         <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">

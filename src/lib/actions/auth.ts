@@ -3,13 +3,18 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { enviarEmailBienvenida } from '@/lib/resend/emails'
+import { rlAuth } from '@/lib/ratelimit'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function registrarse(
   formData: FormData
 ): Promise<{ ok?: boolean; error?: string }> {
+  const rl = await rlAuth(headers())
+  if (!rl.ok) return { error: 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.' }
+
   const nombre = formData.get('nombre')?.toString().trim() ?? ''
   const email = formData.get('email')?.toString().trim() ?? ''
   const password = formData.get('password')?.toString() ?? ''
@@ -50,6 +55,9 @@ export async function registrarse(
 export async function iniciarSesion(
   formData: FormData
 ): Promise<{ error?: string }> {
+  const rl = await rlAuth(headers())
+  if (!rl.ok) return { error: 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.' }
+
   const email = formData.get('email')?.toString().trim() ?? ''
   const password = formData.get('password')?.toString() ?? ''
   const redirectTo = formData.get('redirectTo')?.toString() || ''
@@ -87,6 +95,9 @@ export async function cerrarSesion(): Promise<void> {
 export async function recuperarPassword(
   formData: FormData
 ): Promise<{ ok: boolean; error?: string }> {
+  const rl = await rlAuth(headers())
+  if (!rl.ok) return { ok: false, error: 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.' }
+
   const email = formData.get('email')?.toString().trim() ?? ''
 
   if (!EMAIL_REGEX.test(email)) return { ok: false, error: 'Email inválido' }

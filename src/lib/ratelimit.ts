@@ -37,11 +37,13 @@ const checkoutLimiter = redis
   : null
 
 /**
- * /api/auth/check-email — 30 requests por IP por minuto.
- * Previene enumeración de emails registrados.
+ * /api/auth/check-email — 5 requests por IP por minuto.
+ * El endpoint es un oracle "este email tiene cuenta sí/no"; con un
+ * límite alto se puede enumerar el padrón completo. 5/min permite el
+ * uso legítimo en checkout (corregir typos) sin habilitar enumeración.
  */
 const emailCheckLimiter = redis
-  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '1 m'), prefix: 'rl:emailcheck' })
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '1 m'), prefix: 'rl:emailcheck' })
   : null
 
 /**
@@ -50,6 +52,16 @@ const emailCheckLimiter = redis
  */
 const authLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(10, '5 m'), prefix: 'rl:auth' })
+  : null
+
+/**
+ * /api/exchange-rate — 20 requests por IP por minuto.
+ * El resultado se cachea 24h server-side, así que el riesgo no es exhaustion
+ * del API externo sino abuse del endpoint. 20/min es generoso para clientes
+ * que cambien de moneda varias veces.
+ */
+const exchangeRateLimiter = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, '1 m'), prefix: 'rl:fx' })
   : null
 
 // ── Tipos y helpers internos ──────────────────────────────────────────────
@@ -93,4 +105,9 @@ export async function rlEmailCheck(request: Request): Promise<RateLimitResult> {
  */
 export async function rlAuth(requestHeaders: Headers): Promise<RateLimitResult> {
   return applyLimit(authLimiter, extractIp(requestHeaders))
+}
+
+/** Usar en /api/exchange-rate */
+export async function rlExchangeRate(request: Request): Promise<RateLimitResult> {
+  return applyLimit(exchangeRateLimiter, extractIp(request))
 }

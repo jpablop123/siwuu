@@ -225,7 +225,7 @@ export function CategoriasManager({ categorias }: CategoriasManagerProps) {
                       <button onClick={() => startEdit(c)} className="text-indigo-600 hover:text-indigo-800" aria-label={`Editar ${c.nombre}`}>
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => handleEliminar(c.id, c.nombre)} disabled={isPending} className="text-red-400 hover:text-red-600 disabled:opacity-50" aria-label={`Eliminar ${c.nombre}`}>
+                      <button onClick={() => handleEliminar(c.id, c.nombre)} disabled={isPending} className="text-red-700 hover:text-red-900 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300" aria-label={`Eliminar ${c.nombre}`}>
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>

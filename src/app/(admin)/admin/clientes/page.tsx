@@ -37,7 +37,6 @@ export default async function AdminClientesPage({ searchParams }: Props) {
   query = query.range(from, from + PER_PAGE - 1)
 
   const { data: clientes, count } = await query
-  const totalPages = Math.ceil((count || 0) / PER_PAGE)
 
   // Fetch order stats for these clients
   const clientIds = (clientes || []).map((c) => c.id)

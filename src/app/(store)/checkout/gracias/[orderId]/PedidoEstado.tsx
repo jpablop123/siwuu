@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { CheckCircle, AlertCircle, Loader2, Landmark } from 'lucide-react'
 import { Price } from '@/components/store/Price'
 import Link from 'next/link'
 import type { Pedido, PedidoItem } from '@/types'
@@ -14,9 +14,16 @@ interface Props {
   pedidoInicial: PedidoConItems
   /** true cuando el acceso fue validado por cookie de invitado (no por user_id) */
   isGuest?: boolean
+  /** Wompi `payment_method_type` — null hasta que llega el primer webhook */
+  metodoPago?: string | null
 }
 
-export function PedidoEstado({ pedidoInicial, isGuest = false }: Props) {
+// Métodos que dependen de un sistema externo (banco) y pueden tardar
+// minutos u horas. Mostramos copy específica de "esperando confirmación
+// del banco" y nunca mostramos el estado "timeout / algo falló".
+const METODOS_ASYNC = new Set(['PSE', 'BANCOLOMBIA_TRANSFER'])
+
+export function PedidoEstado({ pedidoInicial, isGuest = false, metodoPago = null }: Props) {
   const [pedido, setPedido] = useState<PedidoConItems>(pedidoInicial)
   const [timeout, setTimeoutReached] = useState(false)
 
@@ -25,6 +32,8 @@ export function PedidoEstado({ pedidoInicial, isGuest = false }: Props) {
     pedido.estado === 'enviado_proveedor' ||
     pedido.estado === 'en_camino' ||
     pedido.estado === 'entregado'
+
+  const esAsync = metodoPago != null && METODOS_ASYNC.has(metodoPago)
 
   useEffect(() => {
     if (confirmado) return
@@ -47,16 +56,60 @@ export function PedidoEstado({ pedidoInicial, isGuest = false }: Props) {
       )
       .subscribe()
 
-    // Timeout a los 30 segundos
-    const timer = setTimeout(() => setTimeoutReached(true), 30_000)
+    // Solo aplica timeout para métodos instantáneos. PSE / transferencia
+    // pueden tardar horas legítimamente — no mostramos "algo va mal".
+    const timer = esAsync ? null : setTimeout(() => setTimeoutReached(true), 30_000)
 
     return () => {
       supabase.removeChannel(channel)
-      clearTimeout(timer)
+      if (timer) clearTimeout(timer)
     }
-  }, [pedido.id, confirmado])
+  }, [pedido.id, confirmado, esAsync])
 
-  // Estado: confirmando pago
+  // Estado: esperando banco (PSE / transferencia bancaria)
+  if (!confirmado && esAsync) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+        <Landmark className="mx-auto h-16 w-16 text-emerald-400" />
+        <h1 className="mt-6 text-2xl font-bold">Esperando confirmación de tu banco</h1>
+        <p className="mt-3 text-zinc-500">
+          Tu pedido fue creado correctamente. Estamos esperando que tu banco
+          confirme el pago — esto puede tomar entre unos minutos y unas horas.
+        </p>
+
+        <div className="mt-8 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-6 py-4 text-left">
+          <p className="text-xs text-emerald-300/80">Número de pedido</p>
+          <p className="font-mono text-lg font-bold text-emerald-200">{pedido.numero}</p>
+          <p className="mt-3 text-xs text-zinc-400">
+            Cuando tu banco confirme, te enviaremos un email y verás el pedido
+            actualizado acá automáticamente. No hace falta que recargues.
+          </p>
+        </div>
+
+        <p className="mt-6 text-xs text-zinc-500">
+          Si en 4 horas no recibimos la confirmación, el pedido se cancela
+          automáticamente y el stock vuelve a estar disponible.
+        </p>
+
+        <div className="mt-8 flex justify-center gap-4">
+          <Link
+            href={isGuest ? '/' : '/cuenta/pedidos'}
+            className="rounded-lg bg-emerald-500 px-6 py-3 text-sm font-medium text-zinc-950 hover:bg-emerald-400"
+          >
+            {isGuest ? 'Volver al inicio' : 'Ver mis pedidos'}
+          </Link>
+          <Link
+            href="/productos"
+            className="rounded-lg border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
+          >
+            Seguir comprando
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Estado: confirmando pago (tarjeta / Nequi — instantáneo)
   if (!confirmado && !timeout) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
@@ -72,7 +125,7 @@ export function PedidoEstado({ pedidoInicial, isGuest = false }: Props) {
     )
   }
 
-  // Estado: timeout (pago puede estar pendiente o fallido)
+  // Estado: timeout para métodos instantáneos (pago puede estar pendiente o fallido)
   if (!confirmado && timeout) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
@@ -140,6 +193,15 @@ export function PedidoEstado({ pedidoInicial, isGuest = false }: Props) {
             </div>
           ))}
         </div>
+
+        {pedido.descuento > 0 && (
+          <div className="mt-3 flex justify-between border-t border-zinc-200 pt-3 text-sm text-emerald-700 dark:border-zinc-700 dark:text-emerald-400">
+            <span>
+              Descuento{pedido.codigo_cupon ? <span className="font-mono"> ({pedido.codigo_cupon})</span> : ''}
+            </span>
+            <span>−<Price amount={pedido.descuento} /></span>
+          </div>
+        )}
 
         <div className="mt-4 border-t border-zinc-200 dark:border-zinc-700 pt-4 text-sm text-zinc-500">
           <p>Envío a: {pedido.direccion_envio}, {pedido.ciudad}</p>

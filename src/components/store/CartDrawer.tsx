@@ -9,9 +9,17 @@ import Link from 'next/link'
 import { useEffect } from 'react'
 
 export function CartDrawer() {
-  const { items, isOpen, cerrarCarrito, quitarItem, cambiarCantidad } = useCart()
+  const { items, isOpen, cerrarCarrito, quitarItem, cambiarCantidad, vaciarCarrito } = useCart()
   const total = useCartTotal()
   const count = useCartCount()
+
+  const handleVaciar = () => {
+    if (items.length === 0) return
+    if (items.length > 3 && !confirm(`¿Vaciar el carrito? Se eliminarán ${count} producto${count === 1 ? '' : 's'}.`)) {
+      return
+    }
+    vaciarCarrito()
+  }
   const envio = total >= COSTO_ENVIO_GRATIS_DESDE ? 0 : COSTO_ENVIO
   const faltaParaGratis = COSTO_ENVIO_GRATIS_DESDE - total
   const porcentajeGratis = Math.min((total / COSTO_ENVIO_GRATIS_DESDE) * 100, 100)
@@ -48,12 +56,26 @@ export function CartDrawer() {
               <p className="text-xs text-zinc-500">{count} {count === 1 ? 'producto' : 'productos'}</p>
             </div>
           </div>
-          <button
-            onClick={cerrarCarrito}
-            className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {items.length > 0 && (
+              <button
+                onClick={handleVaciar}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                aria-label="Vaciar carrito"
+                title="Vaciar carrito"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Vaciar
+              </button>
+            )}
+            <button
+              onClick={cerrarCarrito}
+              className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Free shipping progress */}

@@ -43,6 +43,8 @@ export interface PedidoInput {
   userId?: string | null
   /** Base URL de la app (para construir redirectUrl de Wompi) */
   appUrl: string
+  /** Código de cupón (opcional). La validación + descuento se calculan server-side. */
+  codigoCupon?: string | null
 }
 
 export interface PedidoCreado {
@@ -98,7 +100,7 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
   const {
     nombre, email, telefono, departamento, ciudad, direccion,
     barrio = null, indicaciones = null, guardarDireccion = false,
-    items, userId = null, appUrl,
+    items, userId = null, appUrl, codigoCupon = null,
   } = input
 
   const supabase = createServiceClient()
@@ -131,8 +133,9 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
   }
 
   const costoEnvio = calcularEnvio(subtotal)
-  const total = subtotal + costoEnvio
-  const montoEnCentavos = Math.round(total * 100)
+  // El total final lo calcula el RPC con el descuento aplicado.
+  // Acá pasamos el total sin descuento; el RPC devuelve `total_final`.
+  const totalSinDescuento = subtotal + costoEnvio
 
   // ── 2. Número de pedido (SEQUENCE atómica — sin COUNT(*)) ──────────
   const { data: numPedido } = await supabase.rpc('generar_numero_pedido')
@@ -175,24 +178,29 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
       p_direccion:    direccion,
       p_subtotal:     subtotal,
       p_costo_envio:  costoEnvio,
-      p_total:        total,
+      p_total:        totalSinDescuento,    // ignorado por el RPC, se recalcula con descuento
       p_items:        itemsJson,
       p_referencia:   referencia,
+      p_codigo_cupon: codigoCupon,
     }
   )
 
   if (rpcError || !rpcData || rpcData.length === 0) {
     console.error('[procesarPedido] Error en checkout atómico:', rpcError)
-    // El mensaje de PG tiene formato: 'Stock insuficiente para el producto: Camiseta Roja'
-    // Lo propagamos directamente para que el frontend pueda mostrarlo al usuario.
-    const sinStock = rpcError?.message?.includes('Stock insuficiente para el producto:')
-    if (sinStock) {
-      return { ok: false, error: rpcError!.message, status: 409 }
+    const msg = rpcError?.message ?? ''
+    // Propagar errores específicos de stock o cupón al usuario.
+    const errorUsuario =
+      msg.includes('Stock insuficiente para el producto:') ||
+      msg.includes('cupón') ||
+      msg.includes('Cupón')
+    if (errorUsuario) {
+      return { ok: false, error: msg, status: 409 }
     }
     return { ok: false, error: 'Error al procesar el pedido', status: 500 }
   }
 
-  const tokenAcceso = rpcData[0].token_acceso
+  const { token_acceso: tokenAcceso, total_final: totalFinal } = rpcData[0]
+  const montoEnCentavos = Math.round(Number(totalFinal) * 100)
 
   // ── 6. Hash de integridad Wompi ────────────────────────────────────
   const integrityHash = await generarHashIntegridad(

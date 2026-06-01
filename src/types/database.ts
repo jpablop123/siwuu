@@ -56,9 +56,9 @@ export type Database = {
         ]
       }
       profiles: {
-        Row: { id: string; nombre: string | null; telefono: string | null; cedula: string | null; rol: RolUsuario; created_at: string }
-        Insert: { id: string; nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario; created_at?: string }
-        Update: { nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario }
+        Row: { id: string; nombre: string | null; telefono: string | null; cedula: string | null; rol: RolUsuario; accepted_tos_at: string | null; accepted_privacy_at: string | null; consent_ip: string | null; created_at: string }
+        Insert: { id: string; nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario; accepted_tos_at?: string | null; accepted_privacy_at?: string | null; consent_ip?: string | null; created_at?: string }
+        Update: { nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario; accepted_tos_at?: string | null; accepted_privacy_at?: string | null; consent_ip?: string | null }
         Relationships: []
       }
       direcciones: {
@@ -68,9 +68,15 @@ export type Database = {
         Relationships: []
       }
       pedidos: {
-        Row: { id: string; numero: string; user_id: string | null; token_acceso: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; total: number; estado: EstadoPedido; notas: string | null; numero_guia: string | null; created_at: string; updated_at: string }
-        Insert: { id?: string; numero: string; user_id?: string | null; token_acceso?: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; total: number; estado?: EstadoPedido; notas?: string | null; created_at?: string; updated_at?: string }
-        Update: { estado?: EstadoPedido; notas?: string | null; nombre_cliente?: string; telefono_cliente?: string; ciudad?: string; departamento?: string; direccion_envio?: string; numero_guia?: string | null; updated_at?: string }
+        Row: { id: string; numero: string; user_id: string | null; token_acceso: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; descuento: number; total: number; cupon_id: string | null; codigo_cupon: string | null; estado: EstadoPedido; notas: string | null; numero_guia: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; numero: string; user_id?: string | null; token_acceso?: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; descuento?: number; total: number; cupon_id?: string | null; codigo_cupon?: string | null; estado?: EstadoPedido; notas?: string | null; created_at?: string; updated_at?: string }
+        Update: { user_id?: string | null; estado?: EstadoPedido; notas?: string | null; nombre_cliente?: string; telefono_cliente?: string; ciudad?: string; departamento?: string; direccion_envio?: string; numero_guia?: string | null; descuento?: number; cupon_id?: string | null; codigo_cupon?: string | null; updated_at?: string }
+        Relationships: []
+      }
+      cupones: {
+        Row: { id: string; codigo: string; tipo: 'porcentaje' | 'fijo'; valor: number; minimo_compra: number | null; usos_maximos: number | null; usos_actuales: number; expira_en: string | null; activo: boolean; created_at: string; updated_at: string }
+        Insert: { id?: string; codigo: string; tipo: 'porcentaje' | 'fijo'; valor: number; minimo_compra?: number | null; usos_maximos?: number | null; usos_actuales?: number; expira_en?: string | null; activo?: boolean; created_at?: string; updated_at?: string }
+        Update: { codigo?: string; tipo?: 'porcentaje' | 'fijo'; valor?: number; minimo_compra?: number | null; usos_maximos?: number | null; expira_en?: string | null; activo?: boolean; updated_at?: string }
         Relationships: []
       }
       pedido_items: {
@@ -102,6 +108,18 @@ export type Database = {
         Update: { resuelto?: boolean }
         Relationships: []
       }
+      tienda_banners: {
+        Row: { id: string; titulo: string; subtitulo: string | null; tag: string | null; imagen_url: string; cta_label: string; cta_href: string; cta_secundario_label: string | null; cta_secundario_href: string | null; align: 'left' | 'center'; activo: boolean; orden: number; created_at: string }
+        Insert: { id?: string; titulo: string; subtitulo?: string | null; tag?: string | null; imagen_url: string; cta_label?: string; cta_href?: string; cta_secundario_label?: string | null; cta_secundario_href?: string | null; align?: 'left' | 'center'; activo?: boolean; orden?: number; created_at?: string }
+        Update: { titulo?: string; subtitulo?: string | null; tag?: string | null; imagen_url?: string; cta_label?: string; cta_href?: string; cta_secundario_label?: string | null; cta_secundario_href?: string | null; align?: 'left' | 'center'; activo?: boolean; orden?: number }
+        Relationships: []
+      }
+      tienda_configuracion: {
+        Row: { id: boolean; promo_tag: string; promo_titulo: string; promo_descripcion: string | null; promo_descuento: string; promo_cta_label: string; promo_cta_href: string; promo_imagen: string | null; updated_at: string }
+        Insert: { id?: boolean; promo_tag?: string; promo_titulo?: string; promo_descripcion?: string | null; promo_descuento?: string; promo_cta_label?: string; promo_cta_href?: string; promo_imagen?: string | null; updated_at?: string }
+        Update: { promo_tag?: string; promo_titulo?: string; promo_descripcion?: string | null; promo_descuento?: string; promo_cta_label?: string; promo_cta_href?: string; promo_imagen?: string | null; updated_at?: string }
+        Relationships: []
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -128,8 +146,13 @@ export type Database = {
           p_total:        number
           p_items:        Json
           p_referencia:   string
+          p_codigo_cupon?: string | null
         }
-        Returns: Array<{ pedido_id: string; token_acceso: string }>
+        Returns: Array<{ pedido_id: string; token_acceso: string; descuento: number; total_final: number }>
+      }
+      validar_cupon: {
+        Args: { p_codigo: string; p_subtotal: number }
+        Returns: Array<{ cupon_id: string | null; codigo: string; tipo: 'porcentaje' | 'fijo' | null; valor: number | null; descuento: number; minimo_compra: number | null; error: string | null }>
       }
     }
     Enums: { [_ in never]: never }

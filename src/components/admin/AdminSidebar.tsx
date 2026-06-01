@@ -10,6 +10,7 @@ import {
   Users,
   Tag,
   Truck,
+  Ticket,
   ArrowLeft,
   Menu,
   X,
@@ -23,6 +24,7 @@ const LINKS = [
   { href: '/admin/categorias', label: 'Categorías', icon: Tag },
   { href: '/admin/proveedores', label: 'Proveedores', icon: Truck },
   { href: '/admin/clientes', label: 'Clientes', icon: Users },
+  { href: '/admin/cupones', label: 'Cupones', icon: Ticket },
 ] as const
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -32,7 +34,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <>
       {/* Logo */}
       <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
-        <h2 className="text-lg font-bold text-emerald-400">SiwuuShop Admin</h2>
+        <h2 className="text-lg font-bold text-emerald-700 dark:text-emerald-400">SiwuuShop Admin</h2>
       </div>
 
       {/* Nav links */}
@@ -48,7 +50,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-emerald-500/10 text-emerald-400'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
                   : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
               )}
               aria-current={isActive ? 'page' : undefined}

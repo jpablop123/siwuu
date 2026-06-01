@@ -11,7 +11,7 @@ import { useCartStore } from '@/lib/cart/store'
  * Renderiza null — es solo un efecto de sincronización.
  */
 export function AuthCartSync() {
-  const { sincronizarAlLogin, limpiarAlLogout } = useCartStore()
+  const { setUserId, sincronizarAlLogin, limpiarAlLogout } = useCartStore()
 
   useEffect(() => {
     const supabase = createClient()
@@ -19,21 +19,23 @@ export function AuthCartSync() {
     // Sincronizar si ya hay sesión al montar
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
+        setUserId(data.session.user.id)         // cachear en store
         sincronizarAlLogin(data.session.user.id)
       }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        setUserId(session.user.id)
         sincronizarAlLogin(session.user.id)
       }
       if (event === 'SIGNED_OUT') {
-        limpiarAlLogout()
+        limpiarAlLogout()                       // ya pone userId: null
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [sincronizarAlLogin, limpiarAlLogout])
+  }, [setUserId, sincronizarAlLogin, limpiarAlLogout])
 
   return null
 }

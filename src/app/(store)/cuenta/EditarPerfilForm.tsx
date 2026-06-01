@@ -35,7 +35,7 @@ export function EditarPerfilForm({ perfil }: EditarPerfilFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400" role="alert">
           {error}
         </div>
       )}

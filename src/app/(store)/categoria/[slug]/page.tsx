@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { ProductGrid } from '@/components/store/ProductGrid'
 import { Pagination } from '@/components/store/Pagination'
+import { getCategoriasActivas } from '@/lib/cache/cms'
 import { notFound } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -28,12 +29,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createClient()
-  const { data: cat } = await supabase
-    .from('categorias')
-    .select('nombre, descripcion')
-    .eq('slug', params.slug)
-    .single()
+  const categorias = await getCategoriasActivas()
+  const cat = categorias.find((c) => c.slug === params.slug)
 
   if (!cat) return { title: 'Categoría no encontrada' }
   return {
@@ -47,16 +44,10 @@ export default async function CategoriaPage({ params, searchParams }: Props) {
   const { precio_min, precio_max, orden, page } = searchParams
   const currentPage = Math.max(1, parseInt(page || '1'))
 
-  const { data: categoria } = await supabase
-    .from('categorias')
-    .select('*')
-    .eq('slug', params.slug)
-    .eq('activa', true)
-    .single()
-
-  if (!categoria) notFound()
-
-  const cat = categoria as Categoria
+  // Buscar la categoría en el cache compartido (sin query a Supabase si está caliente)
+  const categorias = await getCategoriasActivas()
+  const cat = categorias.find((c) => c.slug === params.slug) as Categoria | undefined
+  if (!cat) notFound()
 
   // Query de productos con filtros
   let query = supabase

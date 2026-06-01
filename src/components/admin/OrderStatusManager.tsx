@@ -285,20 +285,20 @@ export function OrderStatusManager({
 
       {/* Panel compra al proveedor */}
       {mostrarPanelProveedor && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800/40 dark:bg-amber-950/30">
           <div className="mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
-            <h3 className="text-sm font-semibold text-amber-800">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
               Pendiente de comprar al proveedor
             </h3>
           </div>
-          <p className="mb-3 text-xs text-amber-700">
+          <p className="mb-3 text-xs text-amber-700 dark:text-amber-400/90">
             Compra estos items antes de cambiar el estado a &ldquo;En Bodega&rdquo;
           </p>
           <ul className="space-y-2">
             {itemsConProveedor.map((item, i) => (
               <li key={i} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-zinc-800">
+                <span className="text-zinc-800 dark:text-zinc-200">
                   {item.cantidad} x {item.nombre}
                 </span>
                 {item.urlProveedor ? (
@@ -306,7 +306,7 @@ export function OrderStatusManager({
                     href={item.urlProveedor}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 underline hover:text-indigo-800"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 underline hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                   >
                     Ir al proveedor
                     <ExternalLink className="h-3 w-3" aria-hidden="true" />

@@ -30,12 +30,12 @@ export function CuentaSidebar({ perfil }: CuentaSidebarProps) {
     <aside>
       {/* Perfil */}
       <div className="mb-4 flex items-center gap-3 lg:mb-6">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
           {iniciales || 'U'}
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{perfil.nombre}</p>
-          <p className="truncate text-xs text-zinc-500">{perfil.email}</p>
+          <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{perfil.email}</p>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export function CuentaSidebar({ perfil }: CuentaSidebarProps) {
               className={cn(
                 'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-emerald-500/10 text-emerald-400'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
                   : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
               )}
               aria-current={isActive ? 'page' : undefined}
@@ -70,7 +70,7 @@ export function CuentaSidebar({ perfil }: CuentaSidebarProps) {
             await fetch('/api/auth/logout', { method: 'POST' })
             window.location.href = '/'
           }}
-          className="flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+          className="flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-zinc-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
         >
           <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
           Cerrar sesión

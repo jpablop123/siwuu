@@ -55,7 +55,7 @@ export function TabsEstadoPedidos({ estadoActual, conteos }: TabsEstadoPedidosPr
                   isActive
                     ? 'bg-white/20 text-white'
                     : tab.key === 'urgentes' && count > 0
-                      ? 'bg-rose-500/15 text-rose-400'
+                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-400'
                       : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
                 )}
               >

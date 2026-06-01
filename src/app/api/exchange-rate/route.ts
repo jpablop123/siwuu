@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server'
+import { rlExchangeRate } from '@/lib/ratelimit'
 
 // Cache en memoria del servidor — se renueva cada 24h o al reiniciar
-let cached: { rate: number; fetchedAt: number } | null = null
+let cached: { rate: number; effectiveRate: number; fetchedAt: number } | null = null
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 horas
 
-// Margen a favor: el cliente ve un dólar más caro (tú ganas la diferencia)
-// Ej: si el dólar real es $4,200 y el margen es 3%, el cliente ve $4,326
+// Margen a favor: el cliente ve un dólar más caro (tú ganas la diferencia).
+// NUNCA se expone en la respuesta — es un detalle de negocio privado.
 const MARGIN_PERCENT = Number(process.env.USD_MARGIN_PERCENT ?? '3')
 
 async function fetchRate(): Promise<number> {
-  // Intentar ExchangeRate-API (gratis, sin API key)
   try {
     const res = await fetch(
       'https://open.er-api.com/v6/latest/USD',
@@ -28,14 +28,20 @@ async function fetchRate(): Promise<number> {
   return 4200
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const rl = await rlExchangeRate(request)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+    )
+  }
+
   const now = Date.now()
 
   if (cached && now - cached.fetchedAt < CACHE_TTL) {
     return NextResponse.json({
-      rate: cached.rate,
-      margin: MARGIN_PERCENT,
-      effectiveRate: Math.round(cached.rate * (1 + MARGIN_PERCENT / 100)),
+      effectiveRate: cached.effectiveRate,
       cachedAt: new Date(cached.fetchedAt).toISOString(),
     })
   }
@@ -43,11 +49,9 @@ export async function GET() {
   const realRate = await fetchRate()
   const effectiveRate = Math.round(realRate * (1 + MARGIN_PERCENT / 100))
 
-  cached = { rate: effectiveRate, fetchedAt: now }
+  cached = { rate: realRate, effectiveRate, fetchedAt: now }
 
   return NextResponse.json({
-    rate: realRate,
-    margin: MARGIN_PERCENT,
     effectiveRate,
     cachedAt: new Date(now).toISOString(),
   })

@@ -10,6 +10,10 @@ import { useCart, useCartTotal } from '@/lib/cart/store'
 import { COSTO_ENVIO, COSTO_ENVIO_GRATIS_DESDE } from '@/lib/utils'
 import { Price } from '@/components/store/Price'
 import Image from 'next/image'
+import { Tag, X, MapPin, Plus, Check } from 'lucide-react'
+import { DEPARTAMENTOS, ciudadesDe } from '@/lib/colombia/ubicaciones'
+import { cn } from '@/lib/utils'
+import type { Direccion } from '@/types'
 
 // Tipos globales del widget de Wompi
 declare global {
@@ -31,7 +35,15 @@ export function CheckoutForm() {
   const { items, vaciarCarrito } = useCart()
   const subtotal = useCartTotal()
   const envio = subtotal >= COSTO_ENVIO_GRATIS_DESDE ? 0 : COSTO_ENVIO
-  const total = subtotal + envio
+
+  const [cuponCodigo, setCuponCodigo] = useState('')
+  const [cuponAplicado, setCuponAplicado] = useState<{ codigo: string; descuento: number } | null>(null)
+  const [cuponError, setCuponError] = useState<string | null>(null)
+  const [validandoCupon, setValidandoCupon] = useState(false)
+
+  const descuento = cuponAplicado?.descuento ?? 0
+  const total = Math.max(0, subtotal + envio - descuento)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [wompiReady, setWompiReady] = useState(false)
@@ -39,11 +51,128 @@ export function CheckoutForm() {
   const [emailTienecuenta, setEmailTienecuenta] = useState(false)
   const [emailCheckTimer, setEmailCheckTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
 
+  // Direcciones guardadas + selección actual
+  // `selectedDireccionId === 'nueva'` significa "enviar a otra dirección".
+  const [direcciones, setDirecciones] = useState<Direccion[]>([])
+  const [selectedDireccionId, setSelectedDireccionId] = useState<string | 'nueva'>('nueva')
+  const [guardarDireccion, setGuardarDireccion] = useState(false)
+
+  const aplicarCupon = async () => {
+    setCuponError(null)
+    const codigo = cuponCodigo.trim().toUpperCase()
+    if (!codigo) return
+    if (subtotal <= 0) {
+      setCuponError('Agregá productos al carrito primero')
+      return
+    }
+    setValidandoCupon(true)
+    try {
+      const res = await fetch('/api/cupones/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo, subtotal }),
+      })
+      const data = (await res.json()) as { valido: boolean; codigo?: string; descuento?: number; mensaje?: string }
+      if (data.valido && data.codigo && typeof data.descuento === 'number') {
+        setCuponAplicado({ codigo: data.codigo, descuento: data.descuento })
+        setCuponCodigo(data.codigo)
+      } else {
+        setCuponError(data.mensaje ?? 'Código inválido')
+      }
+    } catch {
+      setCuponError('No pudimos validar el código. Intentá de nuevo.')
+    } finally {
+      setValidandoCupon(false)
+    }
+  }
+
+  const quitarCupon = () => {
+    setCuponAplicado(null)
+    setCuponCodigo('')
+    setCuponError(null)
+  }
+
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => {
-      setIsLoggedIn(!!data.user)
-    })
+    const cargarDatosUsuario = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setIsLoggedIn(false)
+        return
+      }
+      setIsLoggedIn(true)
+
+      // En paralelo: profile (para nombre/teléfono) + direcciones guardadas
+      const [{ data: profile }, { data: dirs }] = await Promise.all([
+        supabase.from('profiles').select('nombre, telefono').eq('id', user.id).single(),
+        supabase
+          .from('direcciones')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('principal', { ascending: false })
+          .order('created_at', { ascending: false }),
+      ])
+
+      const listaDirs = (dirs as Direccion[]) ?? []
+      setDirecciones(listaDirs)
+
+      // Pre-fill datos de contacto desde profile
+      setForm((prev) => ({
+        ...prev,
+        nombre:   prev.nombre   || profile?.nombre   || user.email?.split('@')[0] || '',
+        email:    prev.email    || user.email || '',
+        telefono: prev.telefono || profile?.telefono || '',
+      }))
+
+      // Si hay dirección principal, seleccionarla por default y rellenar
+      if (listaDirs.length > 0) {
+        const principal = listaDirs.find((d) => d.principal) ?? listaDirs[0]
+        setSelectedDireccionId(principal.id)
+        setForm((prev) => ({
+          ...prev,
+          nombre:       principal.nombre_destinatario,
+          telefono:     principal.telefono,
+          departamento: principal.departamento,
+          ciudad:       principal.ciudad,
+          direccion:    principal.direccion,
+          barrio:       principal.barrio ?? '',
+          indicaciones: principal.indicaciones ?? '',
+        }))
+      }
+    }
+    void cargarDatosUsuario()
   }, [])
+
+  // Cambiar entre direcciones guardadas o "nueva dirección"
+  const seleccionarDireccion = (id: string | 'nueva') => {
+    setSelectedDireccionId(id)
+    if (id === 'nueva') {
+      // Mantener nombre/email/telefono del usuario; limpiar campos de envío
+      setForm((prev) => ({
+        ...prev,
+        departamento: '',
+        ciudad: '',
+        direccion: '',
+        barrio: '',
+        indicaciones: '',
+      }))
+      setGuardarDireccion(false)
+    } else {
+      const dir = direcciones.find((d) => d.id === id)
+      if (dir) {
+        setForm((prev) => ({
+          ...prev,
+          nombre:       dir.nombre_destinatario,
+          telefono:     dir.telefono,
+          departamento: dir.departamento,
+          ciudad:       dir.ciudad,
+          direccion:    dir.direccion,
+          barrio:       dir.barrio ?? '',
+          indicaciones: dir.indicaciones ?? '',
+        }))
+      }
+    }
+  }
 
   const [form, setForm] = useState({
     nombre: '',
@@ -111,6 +240,11 @@ export function CheckoutForm() {
           subtotal,
           costoEnvio: envio,
           total,
+          // El servidor re-valida el cupón con FOR UPDATE y recalcula el descuento.
+          // Si fue invalidado entre que se aplicó y el checkout, la transacción aborta.
+          codigoCupon: cuponAplicado?.codigo ?? null,
+          // Solo guardar si está logueado, eligió "nueva dirección" y tildó el check
+          guardarDireccion: isLoggedIn && selectedDireccionId === 'nueva' && guardarDireccion,
         }),
       })
 
@@ -136,13 +270,23 @@ export function CheckoutForm() {
 
       checkout.open((result) => {
         const { status } = result.transaction
-        if (status === 'APPROVED') {
+
+        // APPROVED  → tarjeta/Nequi confirmados, vamos a "gracias".
+        // PENDING   → PSE / transferencia bancaria: el banco confirmará después.
+        //             El pedido ya existe en BD; vaciamos carrito y redirigimos
+        //             a la página de "gracias" que mostrará el estado en vivo
+        //             vía Realtime de Supabase cuando llegue el webhook.
+        //             NO confiamos en Wompi para auto-redirigir.
+        if (status === 'APPROVED' || status === 'PENDING') {
           vaciarCarrito()
           window.location.href = data.redirectUrl
-        } else if (status === 'DECLINED' || status === 'ERROR') {
-          setError('El pago fue rechazado. Verificá los datos de tu tarjeta.')
+          return
         }
-        // PENDING: Wompi redirige al redirectUrl automáticamente
+
+        // DECLINED / ERROR / VOIDED → mantenemos el carrito para reintentar.
+        if (status === 'DECLINED' || status === 'ERROR' || status === 'VOIDED') {
+          setError('El pago no pudo completarse. Verificá los datos o probá con otro método.')
+        }
       })
     } catch (err) {
       console.error('Error al crear pedido:', err)
@@ -183,15 +327,127 @@ export function CheckoutForm() {
 
           <div>
             <h2 className="mb-4 text-lg font-semibold">Dirección de envío</h2>
+
+            {/* Picker de direcciones guardadas (solo si logueado y tiene direcciones) */}
+            {isLoggedIn && direcciones.length > 0 && (
+              <div className="mb-5 space-y-2">
+                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Mis direcciones guardadas
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {direcciones.map((dir) => {
+                    const isSelected = selectedDireccionId === dir.id
+                    return (
+                      <button
+                        key={dir.id}
+                        type="button"
+                        onClick={() => seleccionarDireccion(dir.id)}
+                        className={cn(
+                          'flex flex-col items-start gap-1 rounded-xl border-2 p-3 text-left transition-colors',
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
+                            : 'border-zinc-200 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500',
+                        )}
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+                            {dir.nombre_destinatario}
+                          </span>
+                          {isSelected && <Check className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />}
+                        </div>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400">{dir.direccion}</p>
+                        <p className="text-xs text-zinc-500">
+                          {dir.ciudad}, {dir.departamento} · Tel: {dir.telefono}
+                        </p>
+                        {dir.principal && (
+                          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
+                            Principal
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => seleccionarDireccion('nueva')}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-xl border-2 border-dashed p-3 text-sm font-medium transition-colors',
+                      selectedDireccionId === 'nueva'
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300'
+                        : 'border-zinc-300 text-zinc-600 hover:border-emerald-500 hover:text-emerald-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-emerald-400 dark:hover:text-emerald-300',
+                    )}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Enviar a otra dirección
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Departamento" name="departamento" value={form.departamento} onChange={handleChange} required />
-              <Input label="Ciudad" name="ciudad" value={form.ciudad} onChange={handleChange} required />
+              <div>
+                <label htmlFor="departamento-select" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Departamento
+                </label>
+                <select
+                  id="departamento-select"
+                  name="departamento"
+                  value={form.departamento}
+                  onChange={(e) =>
+                    // Al cambiar de departamento, la ciudad anterior pierde sentido — reset
+                    setForm({ ...form, departamento: e.target.value, ciudad: '' })
+                  }
+                  required
+                  className="flex w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 focus-visible:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                >
+                  <option value="">Seleccioná...</option>
+                  {DEPARTAMENTOS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="ciudad-select" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Ciudad
+                </label>
+                <select
+                  id="ciudad-select"
+                  name="ciudad"
+                  value={form.ciudad}
+                  onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
+                  required
+                  disabled={!form.departamento}
+                  className="flex w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 focus-visible:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                >
+                  <option value="">
+                    {form.departamento ? 'Seleccioná...' : 'Elegí un departamento primero'}
+                  </option>
+                  {ciudadesDe(form.departamento).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
               <div className="sm:col-span-2">
-                <Input label="Dirección" name="direccion" value={form.direccion} onChange={handleChange} required />
+                <Input label="Dirección" name="direccion" value={form.direccion} onChange={handleChange} required placeholder="Calle 123 #45-67" />
               </div>
               <Input label="Barrio" name="barrio" value={form.barrio} onChange={handleChange} />
-              <Input label="Indicaciones adicionales" name="indicaciones" value={form.indicaciones} onChange={handleChange} />
+              <Input label="Indicaciones adicionales" name="indicaciones" value={form.indicaciones} onChange={handleChange} placeholder="Apto, torre, referencias..." />
             </div>
+
+            {/* Guardar nueva dirección — solo si logueado y eligió "nueva" */}
+            {isLoggedIn && selectedDireccionId === 'nueva' && (
+              <label className="mt-4 flex cursor-pointer items-center gap-2.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-200">
+                <input
+                  type="checkbox"
+                  checked={guardarDireccion}
+                  onChange={(e) => setGuardarDireccion(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-400 bg-white text-emerald-600 accent-emerald-600 dark:border-zinc-600 dark:bg-zinc-800"
+                />
+                Guardar esta dirección en mi cuenta para próximos pedidos
+              </label>
+            )}
           </div>
 
           {error && (
@@ -231,6 +487,61 @@ export function CheckoutForm() {
               </div>
             ))}
           </div>
+          {/* Cupón */}
+          <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+            {cuponAplicado ? (
+              <div className="flex items-center justify-between rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Tag className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
+                  <span className="truncate font-medium text-emerald-800 dark:text-emerald-300">
+                    Cupón <span className="font-mono">{cuponAplicado.codigo}</span> aplicado
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={quitarCupon}
+                  className="shrink-0 rounded p-1 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
+                  aria-label="Quitar cupón"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={cuponCodigo}
+                    onChange={(e) => {
+                      setCuponCodigo(e.target.value)
+                      setCuponError(null)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); aplicarCupon() }
+                    }}
+                    placeholder="¿Tenés un código de descuento?"
+                    maxLength={30}
+                    className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm uppercase placeholder:normal-case placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    aria-label="Código de descuento"
+                  />
+                  <button
+                    type="button"
+                    onClick={aplicarCupon}
+                    disabled={validandoCupon || !cuponCodigo.trim()}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    {validandoCupon ? '...' : 'Aplicar'}
+                  </button>
+                </div>
+                {cuponError && (
+                  <p className="mt-1.5 text-xs text-red-700 dark:text-red-400" role="alert">
+                    {cuponError}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
           <div className="mt-4 space-y-2 border-t border-zinc-200 dark:border-zinc-700 pt-4 text-sm">
             <div className="flex justify-between">
               <span className="text-zinc-600 dark:text-zinc-400">Subtotal</span>
@@ -240,6 +551,12 @@ export function CheckoutForm() {
               <span className="text-zinc-600 dark:text-zinc-400">Envío</span>
               <span>{envio === 0 ? 'GRATIS' : <Price amount={envio} />}</span>
             </div>
+            {descuento > 0 && (
+              <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+                <span>Descuento</span>
+                <span>−<Price amount={descuento} /></span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-700 pt-2 text-lg font-bold">
               <span>Total</span>
               <Price amount={total} />

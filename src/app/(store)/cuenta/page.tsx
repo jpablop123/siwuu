@@ -30,7 +30,7 @@ export default async function CuentaPage({ searchParams }: Props) {
   return (
     <div>
       {searchParams.password === 'actualizado' && (
-        <div className="mb-6 rounded-xl bg-green-500/10 px-4 py-3 text-sm font-medium text-green-400">
+        <div className="mb-6 rounded-xl border border-green-300 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-400">
           Contraseña actualizada correctamente
         </div>
       )}

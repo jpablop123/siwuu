@@ -13,6 +13,12 @@ import type { CartItem } from '@/types'
 interface CartState {
   items: CartItem[]
   isOpen: boolean
+  /**
+   * userId cacheado en memoria. Lo setea AuthCartSync on mount/SIGNED_IN
+   * y lo limpia on SIGNED_OUT. Evita llamar a `auth.getUser()` (network)
+   * en cada operación del carrito.
+   */
+  userId: string | null
 }
 
 interface CartActions {
@@ -23,13 +29,14 @@ interface CartActions {
   abrirCarrito: () => void
   cerrarCarrito: () => void
   toggleCarrito: () => void
+  setUserId: (id: string | null) => void
   sincronizarAlLogin: (userId: string) => Promise<void>
   limpiarAlLogout: () => void
 }
 
 type CartStore = CartState & CartActions
 
-const INITIAL_STATE: CartState = { items: [], isOpen: false }
+const INITIAL_STATE: CartState = { items: [], isOpen: false, userId: null }
 
 // ---------------------------------------------------------------------------
 // Helpers Supabase — sync en background
@@ -71,10 +78,9 @@ async function eliminarItemRemoto(productoId: string, variante: string | undefin
   await query
 }
 
-function syncConUsuario(fn: (userId: string) => void) {
-  createClient()
-    .auth.getUser()
-    .then(({ data }) => { if (data.user) fn(data.user.id) })
+async function vaciarRemotoBulk(userId: string) {
+  const supabase = createClient()
+  await supabase.from('carrito_items').delete().eq('user_id', userId)
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +93,7 @@ export const useCartStore = create<CartStore>()(
       ...INITIAL_STATE,
 
       agregarItem: (item) => {
-        const { items } = get()
+        const { items, userId } = get()
         const existente = items.find(
           (i) => i.productoId === item.productoId && i.variante === item.variante
         )
@@ -107,14 +113,16 @@ export const useCartStore = create<CartStore>()(
           set({ items: [...items, nuevoItem], isOpen: true })
         }
 
-        syncConUsuario((uid) => upsertItemRemoto(nuevoItem, uid))
+        // Fire-and-forget: no bloqueamos la UI esperando la respuesta
+        if (userId) void upsertItemRemoto(nuevoItem, userId)
       },
 
       quitarItem: (id) => {
-        const item = get().items.find((i) => i.id === id)
-        set({ items: get().items.filter((i) => i.id !== id) })
-        if (item) {
-          syncConUsuario((uid) => eliminarItemRemoto(item.productoId, item.variante, uid))
+        const { items, userId } = get()
+        const item = items.find((i) => i.id === id)
+        set({ items: items.filter((i) => i.id !== id) })
+        if (item && userId) {
+          void eliminarItemRemoto(item.productoId, item.variante, userId)
         }
       },
 
@@ -126,13 +134,20 @@ export const useCartStore = create<CartStore>()(
         const items = get().items.map((i) => i.id === id ? { ...i, cantidad } : i)
         set({ items })
         const item = items.find((i) => i.id === id)
-        if (item) syncConUsuario((uid) => upsertItemRemoto(item, uid))
+        const { userId } = get()
+        if (item && userId) void upsertItemRemoto(item, userId)
       },
 
-      vaciarCarrito: () => set({ items: [] }),
+      vaciarCarrito: () => {
+        const { userId } = get()
+        set({ items: [] })
+        // Bulk delete: 1 query borra todo, en vez de N queries por item
+        if (userId) void vaciarRemotoBulk(userId)
+      },
       abrirCarrito: () => set({ isOpen: true }),
       cerrarCarrito: () => set({ isOpen: false }),
       toggleCarrito: () => set((s) => ({ isOpen: !s.isOpen })),
+      setUserId: (userId) => set({ userId }),
 
       // Al login: merge carrito local (prioridad) con Supabase
       sincronizarAlLogin: async (userId) => {
@@ -178,11 +193,12 @@ export const useCartStore = create<CartStore>()(
         }
       },
 
-      limpiarAlLogout: () => set({ items: [], isOpen: false }),
+      limpiarAlLogout: () => set({ items: [], isOpen: false, userId: null }),
     }),
     {
       name: 'siwuushop-cart',
       storage: createJSONStorage(() => localStorage),
+      // userId no se persiste — se inyecta desde AuthCartSync en cada sesión
       partialize: (state) => ({ items: state.items }),
     }
   )

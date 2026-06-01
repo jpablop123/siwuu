@@ -1,4 +1,4 @@
-import { resend, FROM_EMAIL, buildEmailBase, buildTablaItems } from './client'
+import { resend, FROM_EMAIL, buildEmailBase, buildTablaItems, escapeHtml } from './client'
 import { formatCOP } from '@/lib/utils'
 import { createServiceClient } from '@/lib/supabase/server'
 
@@ -44,6 +44,8 @@ export async function enviarEmailConfirmacionPedido(params: {
   }>
   subtotal: number
   costoEnvio: number
+  descuento?: number
+  codigoCupon?: string | null
   total: number
   ciudad: string
   departamento: string
@@ -56,12 +58,18 @@ export async function enviarEmailConfirmacionPedido(params: {
       ? '<span style="color:#16a34a;font-weight:bold">Gratis \ud83c\udf89</span>'
       : formatCOP(params.costoEnvio)
 
+  const nombreSafe = escapeHtml(params.nombre)
+  const numeroPedidoSafe = escapeHtml(params.numeroPedido)
+  const direccionSafe = escapeHtml(params.direccionEnvio)
+  const ciudadSafe = escapeHtml(params.ciudad)
+  const departamentoSafe = escapeHtml(params.departamento)
+
   const contenido = `
     <h2 style="margin:0 0 8px;font-size:20px;color:#111827">
-      \u00a1Hola ${params.nombre}! Tu pedido fue confirmado. \ud83c\udf89
+      \u00a1Hola ${nombreSafe}! Tu pedido fue confirmado. \ud83c\udf89
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6">
-      Recibimos tu pago y tu pedido <strong>#${params.numeroPedido}</strong> est\u00e1 siendo procesado.
+      Recibimos tu pago y tu pedido <strong>#${numeroPedidoSafe}</strong> est\u00e1 siendo procesado.
     </p>
 
     ${buildTablaItems(params.items)}
@@ -75,6 +83,16 @@ export async function enviarEmailConfirmacionPedido(params: {
         <td style="padding:6px 0;font-size:14px;color:#6b7280">Env\u00edo</td>
         <td style="padding:6px 0;font-size:14px;color:#374151;text-align:right">${envioTexto}</td>
       </tr>
+      ${(params.descuento ?? 0) > 0 ? `
+      <tr>
+        <td style="padding:6px 0;font-size:14px;color:#047857">
+          Descuento${params.codigoCupon ? ` (${escapeHtml(params.codigoCupon)})` : ''}
+        </td>
+        <td style="padding:6px 0;font-size:14px;color:#047857;text-align:right;font-weight:bold">
+          \u2212${formatCOP(params.descuento!)}
+        </td>
+      </tr>
+      ` : ''}
       <tr>
         <td colspan="2" style="padding:8px 0 0;border-top:2px solid #e5e7eb"></td>
       </tr>
@@ -89,8 +107,8 @@ export async function enviarEmailConfirmacionPedido(params: {
         Direcci\u00f3n de entrega:
       </p>
       <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.5">
-        ${params.direccionEnvio}<br>
-        ${params.ciudad}, ${params.departamento}
+        ${direccionSafe}<br>
+        ${ciudadSafe}, ${departamentoSafe}
       </p>
     </div>
 
@@ -123,6 +141,7 @@ export async function enviarEmailConfirmacionPedido(params: {
     return { ok: false, error: msg }
   }
 }
+
 
 // ---------------------------------------------------------------------------
 // EMAIL 2: Actualización de estado
@@ -169,15 +188,19 @@ export async function enviarEmailActualizacionEstado(params: {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
+  const nombreSafe = escapeHtml(params.nombre)
+  const numeroPedidoSafe = escapeHtml(params.numeroPedido)
+
   let guiaHtml = ''
   if (params.numeroGuia && params.nuevoEstado === 'en_camino') {
+    const guiaSafe = escapeHtml(params.numeroGuia)
     guiaHtml = `
       <div style="background-color:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;margin:16px 0">
         <p style="margin:0 0 4px;font-size:14px;font-weight:bold;color:#166534">
           \ud83d\udd0d N\u00famero de gu\u00eda:
         </p>
         <p style="margin:0 0 4px;font-family:monospace;font-size:18px;color:#166534">
-          ${params.numeroGuia}
+          ${guiaSafe}
         </p>
         <p style="margin:0;font-size:12px;color:#6b7280">
           Us\u00e1 este n\u00famero para rastrear tu env\u00edo con la transportadora.
@@ -194,11 +217,11 @@ export async function enviarEmailActualizacionEstado(params: {
       ${config.asunto}
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:#6b7280;text-align:center;line-height:1.6">
-      Hola ${params.nombre}, ${config.mensaje}
+      Hola ${nombreSafe}, ${config.mensaje}
     </p>
 
     <p style="margin:0 0 8px;font-size:14px;color:#6b7280;text-align:center">
-      Pedido: <strong>#${params.numeroPedido}</strong>
+      Pedido: <strong>#${numeroPedidoSafe}</strong>
     </p>
 
     ${guiaHtml}
@@ -239,13 +262,15 @@ export async function enviarEmailBienvenida(params: {
 }): Promise<{ ok: boolean; error?: string }> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const storeName = process.env.NEXT_PUBLIC_STORE_NAME ?? 'SiwuuShop'
+  const nombreSafe = escapeHtml(params.nombre)
+  const storeNameSafe = escapeHtml(storeName)
 
   const contenido = `
     <h2 style="margin:0 0 8px;font-size:20px;color:#111827">
-      \u00a1Bienvenido/a, ${params.nombre}! \ud83d\udc4b
+      \u00a1Bienvenido/a, ${nombreSafe}! \ud83d\udc4b
     </h2>
     <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6">
-      Tu cuenta en ${storeName} fue creada exitosamente.
+      Tu cuenta en ${storeNameSafe} fue creada exitosamente.
     </p>
 
     <div style="background-color:#f9fafb;border-radius:8px;padding:20px;margin:0 0 24px">

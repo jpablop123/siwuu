@@ -37,13 +37,13 @@ export function LoginForm({ redirectTo, linkError }: LoginFormProps) {
       )}
 
       {linkError && (
-        <div className="rounded-xl bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
+        <div className="rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-500/20 dark:bg-yellow-500/10 dark:text-yellow-300">
           El link expiró. Solicitá uno nuevo.
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400" role="alert">
           {error}
         </div>
       )}
@@ -69,7 +69,7 @@ export function LoginForm({ redirectTo, linkError }: LoginFormProps) {
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-[34px] text-zinc-500 hover:text-zinc-300"
+          className="absolute right-3 top-[34px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
           aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
         >
           {showPassword ? (
@@ -83,7 +83,7 @@ export function LoginForm({ redirectTo, linkError }: LoginFormProps) {
       <div className="text-right">
         <Link
           href="/recuperar-password"
-          className="text-sm text-emerald-400 hover:underline"
+          className="text-sm text-emerald-700 hover:underline dark:text-emerald-400"
         >
           ¿Olvidaste tu contraseña?
         </Link>
@@ -93,9 +93,9 @@ export function LoginForm({ redirectTo, linkError }: LoginFormProps) {
         Iniciar sesión
       </Button>
 
-      <p className="text-center text-sm text-zinc-500">
+      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         ¿No tenés cuenta?{' '}
-        <Link href="/registro" className="font-medium text-emerald-400 hover:underline">
+        <Link href="/registro" className="font-medium text-emerald-700 hover:underline dark:text-emerald-400">
           Crear cuenta
         </Link>
       </p>

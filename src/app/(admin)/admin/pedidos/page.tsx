@@ -75,7 +75,6 @@ export default async function AdminPedidosPage({ searchParams }: Props) {
   query = query.range(from, from + PER_PAGE - 1)
 
   const { data: pedidos, count } = await query
-  const totalPages = Math.ceil((count || 0) / PER_PAGE)
 
   const rows = (pedidos as Array<{
     id: string

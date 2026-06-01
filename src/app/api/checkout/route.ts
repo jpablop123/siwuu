@@ -35,6 +35,8 @@ export async function POST(request: Request) {
       direccion: string
       barrio?: string
       indicaciones?: string
+      codigoCupon?: string
+      guardarDireccion?: boolean
       // Solo extraemos productoId/cantidad/variante — precio siempre desde BD
       items: Array<{ productoId: string; cantidad: number; variante?: string; [k: string]: unknown }>
     }
@@ -69,9 +71,12 @@ export async function POST(request: Request) {
       direccion:    body.direccion,
       barrio:       body.barrio ?? null,
       indicaciones: body.indicaciones ?? null,
+      // Solo guardar si está logueado (procesarPedido también lo chequea)
+      guardarDireccion: !!userId && !!body.guardarDireccion,
       items,
       userId,
-      appUrl: getAppUrl(request),
+      appUrl:       getAppUrl(request),
+      codigoCupon:  body.codigoCupon?.trim() || null,
     })
 
     if (!result.ok) {

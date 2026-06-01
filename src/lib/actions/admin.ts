@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { enviarEmailActualizacionEstado } from '@/lib/resend/emails'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -122,14 +122,24 @@ export async function obtenerMetricasDashboard(): Promise<{
 // Pedidos
 // ---------------------------------------------------------------------------
 
-const ESTADOS_VALIDOS: import('@/types').EstadoPedido[] = [
-  'pago_confirmado',
-  'procesando',
-  'enviado_proveedor',
-  'en_camino',
-  'entregado',
-  'cancelado',
-]
+type EstadoPedido = import('@/types').EstadoPedido
+
+// Máquina de estados: qué transiciones admin son válidas desde cada estado.
+// pendiente→pago_confirmado lo hace el webhook (no se permite admin manual).
+// pendiente→cancelado lo hace el cron de expiración (también admin via cancelarPedidoAction).
+const TRANSICIONES_VALIDAS: Record<EstadoPedido, readonly EstadoPedido[]> = {
+  pendiente:          ['cancelado'],
+  pago_confirmado:    ['procesando', 'enviado_proveedor', 'cancelado'],
+  procesando:         ['enviado_proveedor', 'en_camino', 'cancelado'],
+  enviado_proveedor:  ['procesando', 'en_camino', 'cancelado'],
+  en_camino:          ['entregado', 'cancelado'],
+  entregado:          [],
+  cancelado:          [],
+}
+
+function esEstadoValido(s: string): s is EstadoPedido {
+  return s in TRANSICIONES_VALIDAS
+}
 
 export async function actualizarEstadoPedido(
   pedidoId: string,
@@ -138,8 +148,29 @@ export async function actualizarEstadoPedido(
 ): Promise<{ ok?: boolean; error?: string }> {
   const { supabase } = await verificarAdmin()
 
-  if (!(ESTADOS_VALIDOS as string[]).includes(nuevoEstado)) {
+  if (!esEstadoValido(nuevoEstado)) {
     return { error: 'Estado inválido' }
+  }
+
+  // Leer estado actual para validar la transición
+  const { data: pedidoActual, error: fetchError } = await supabase
+    .from('pedidos')
+    .select('estado')
+    .eq('id', pedidoId)
+    .single()
+
+  if (fetchError || !pedidoActual) return { error: 'Pedido no encontrado' }
+
+  const estadoActual = pedidoActual.estado as EstadoPedido
+  if (estadoActual === nuevoEstado) {
+    return { ok: true } // no-op idempotente
+  }
+
+  const permitidas = TRANSICIONES_VALIDAS[estadoActual] ?? []
+  if (!permitidas.includes(nuevoEstado)) {
+    return {
+      error: `Transición inválida: "${estadoActual}" → "${nuevoEstado}"`,
+    }
   }
 
   const updateObj: Record<string, unknown> = {
@@ -151,9 +182,19 @@ export async function actualizarEstadoPedido(
     updateObj.numero_guia = numeroGuia.trim()
   }
 
-  const { error } = await supabase.from('pedidos').update(updateObj).eq('id', pedidoId)
+  // UPDATE atómico: si el estado cambió entre el SELECT y este UPDATE
+  // (race con webhook o cron), `.eq('estado', estadoActual)` lo bloquea.
+  const { data: actualizadas, error } = await supabase
+    .from('pedidos')
+    .update(updateObj)
+    .eq('id', pedidoId)
+    .eq('estado', estadoActual)
+    .select('id')
 
   if (error) return { error: error.message }
+  if (!actualizadas || actualizadas.length === 0) {
+    return { error: 'El pedido cambió de estado mientras lo actualizabas. Recargá la página.' }
+  }
 
   // Email de actualización — best effort
   try {
@@ -569,6 +610,7 @@ export async function crearCategoria(
 
   if (error) return { error: error.message }
 
+  revalidateTag('categorias')
   revalidatePath('/admin/categorias')
   revalidatePath('/')
   return { ok: true }
@@ -595,6 +637,7 @@ export async function actualizarCategoria(
 
   if (error) return { error: error.message }
 
+  revalidateTag('categorias')
   revalidatePath('/admin/categorias')
   revalidatePath('/')
   return { ok: true }
@@ -616,6 +659,7 @@ export async function eliminarCategoria(id: string): Promise<{ ok?: boolean; err
   const { error } = await supabase.from('categorias').delete().eq('id', id)
   if (error) return { error: error.message }
 
+  revalidateTag('categorias')
   revalidatePath('/admin/categorias')
   return { ok: true }
 }
@@ -748,6 +792,7 @@ export async function crearBannerHero(
 
   if (error) return { ok: false, error: error.message }
 
+  revalidateTag('banners')
   revalidatePath('/')
   revalidatePath('/admin/apariencia')
   return { ok: true, id: row?.id }
@@ -775,6 +820,7 @@ export async function actualizarBannerHero(
   const { error } = await supabase.from('tienda_banners').update(patch).eq('id', id)
   if (error) return { ok: false, error: error.message }
 
+  revalidateTag('banners')
   revalidatePath('/')
   revalidatePath('/admin/apariencia')
   return { ok: true }
@@ -784,6 +830,7 @@ export async function eliminarBannerHero(id: string): Promise<{ ok: boolean; err
   const { supabase } = await verificarAdmin()
   const { error } = await supabase.from('tienda_banners').delete().eq('id', id)
   if (error) return { ok: false, error: error.message }
+  revalidateTag('banners')
   revalidatePath('/')
   revalidatePath('/admin/apariencia')
   return { ok: true }
@@ -824,6 +871,7 @@ export async function actualizarConfiguracionTienda(
 
   if (error) return { ok: false, error: error.message }
 
+  revalidateTag('tienda-config')
   revalidatePath('/')
   revalidatePath('/admin/apariencia')
   return { ok: true }

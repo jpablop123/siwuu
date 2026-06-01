@@ -87,7 +87,7 @@ export function ImageUploader({ value, onChange, max = 5 }: ImageUploaderProps) 
 
       for (const chunk of chunks) {
         await Promise.all(
-          chunk.map(async (entry, idx) => {
+          chunk.map(async (entry) => {
             updateQueue(entry.key, { status: 'uploading' })
 
             if (fileArray[entries.indexOf(entry)].size > MAX_SIZE_MB * 1024 * 1024) {
@@ -170,12 +170,12 @@ export function ImageUploader({ value, onChange, max = 5 }: ImageUploaderProps) 
           className={cn(
             'flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-10 text-sm transition-colors',
             isDragging
-              ? 'border-emerald-400 bg-emerald-500/5 text-emerald-400'
-              : 'border-zinc-200 text-zinc-500 hover:border-emerald-400 hover:text-emerald-400 dark:border-zinc-700'
+              ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-400 dark:bg-emerald-500/5 dark:text-emerald-400'
+              : 'border-zinc-300 text-zinc-600 hover:border-emerald-500 hover:text-emerald-700 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-emerald-400 dark:hover:text-emerald-400'
           )}
         >
           {isUploading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-emerald-700 dark:text-emerald-400" />
           ) : (
             <Upload className="h-6 w-6" aria-hidden="true" />
           )}
@@ -213,16 +213,16 @@ export function ImageUploader({ value, onChange, max = 5 }: ImageUploaderProps) 
               className={cn(
                 'flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm',
                 entry.status === 'error'
-                  ? 'border-rose-500/30 bg-rose-500/5 text-rose-400'
+                  ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/5 dark:text-rose-400'
                   : 'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'
               )}
             >
               {entry.status === 'uploading' || entry.status === 'pending' ? (
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-emerald-400" />
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-emerald-700 dark:text-emerald-400" />
               ) : entry.status === 'done' ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
               ) : (
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-700 dark:text-rose-400" />
               )}
               <span className="min-w-0 truncate">{entry.nombre}</span>
               {entry.status === 'error' && (

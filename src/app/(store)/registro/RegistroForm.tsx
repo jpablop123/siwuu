@@ -6,12 +6,16 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Eye, EyeOff, Mail } from 'lucide-react'
 import Link from 'next/link'
+import { registroSchema, flattenErrors } from '@/lib/validators/auth'
 
 interface FieldErrors {
   nombre?: string
   email?: string
+  telefono?: string
   password?: string
   confirmarPassword?: string
+  aceptaTerminos?: string
+  aceptaPrivacidad?: string
   global?: string
 }
 
@@ -22,35 +26,33 @@ export function RegistroForm() {
   const [registrado, setRegistrado] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const validate = (formData: FormData): FieldErrors => {
-    const e: FieldErrors = {}
-    const nombre = formData.get('nombre')?.toString().trim() ?? ''
-    const email = formData.get('email')?.toString().trim() ?? ''
-    const password = formData.get('password')?.toString() ?? ''
-    const confirmar = formData.get('confirmarPassword')?.toString() ?? ''
-
-    if (nombre.length < 2) e.nombre = 'Mínimo 2 caracteres'
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Email inválido'
-    if (password.length < 8) e.password = 'Mínimo 8 caracteres'
-    if (password !== confirmar) e.confirmarPassword = 'Las contraseñas no coinciden'
-
-    return e
-  }
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
 
-    const fieldErrors = validate(formData)
-    if (Object.keys(fieldErrors).length > 0) {
-      setErrors(fieldErrors)
+    // Validación cliente con el MISMO schema que usa el servidor.
+    const parsed = registroSchema.safeParse({
+      nombre:             formData.get('nombre')?.toString() ?? '',
+      email:              formData.get('email')?.toString() ?? '',
+      telefono:           formData.get('telefono')?.toString() ?? '',
+      password:           formData.get('password')?.toString() ?? '',
+      confirmarPassword:  formData.get('confirmarPassword')?.toString() ?? '',
+      aceptaTerminos:     formData.get('aceptaTerminos')?.toString() ?? '',
+      aceptaPrivacidad:   formData.get('aceptaPrivacidad')?.toString() ?? '',
+      website:            formData.get('website')?.toString() ?? '',
+    })
+
+    if (!parsed.success) {
+      setErrors(flattenErrors(parsed.error))
       return
     }
 
     setErrors({})
     startTransition(async () => {
       const result = await registrarse(formData)
-      if (result?.error) {
+      if (result?.fieldErrors) {
+        setErrors(result.fieldErrors)
+      } else if (result?.error) {
         setErrors({ global: result.error })
       } else if (result?.ok) {
         setRegistrado(true)
@@ -60,13 +62,14 @@ export function RegistroForm() {
 
   if (registrado) {
     return (
-      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20">
-          <Mail className="h-7 w-7 text-emerald-400" />
+      <div className="rounded-xl border border-emerald-600/30 bg-emerald-50 p-8 text-center dark:border-emerald-500/20 dark:bg-emerald-500/10">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-200 dark:bg-emerald-500/20">
+          <Mail className="h-7 w-7 text-emerald-700 dark:text-emerald-400" />
         </div>
-        <h2 className="text-lg font-bold text-zinc-100">¡Cuenta creada!</h2>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-          Te enviamos un email de confirmación. Revisá tu bandeja de entrada y hacé click en el enlace para activar tu cuenta.
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">¡Casi listo!</h2>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-700 dark:text-zinc-400">
+          Si el email es nuevo, te enviamos un link de confirmación. Si ya tenías cuenta,
+          podés iniciar sesión directamente o recuperar tu contraseña.
         </p>
         <Link
           href="/login"
@@ -79,12 +82,26 @@ export function RegistroForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       {errors.global && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400" role="alert">
+        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400" role="alert">
           {errors.global}
         </div>
       )}
+
+      {/* Honeypot — invisible para humanos, los bots lo llenan.
+          tabIndex=-1 y aria-hidden=true para que screen readers no lo anuncien. */}
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <label htmlFor="website">Dejá este campo vacío</label>
+        <input
+          type="text"
+          id="website"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          defaultValue=""
+        />
+      </div>
 
       <Input
         label="Nombre completo"
@@ -92,6 +109,7 @@ export function RegistroForm() {
         required
         placeholder="Tu nombre"
         autoComplete="name"
+        maxLength={100}
         error={errors.nombre}
       />
 
@@ -102,6 +120,7 @@ export function RegistroForm() {
         required
         placeholder="tu@email.com"
         autoComplete="email"
+        maxLength={254}
         error={errors.email}
       />
 
@@ -109,8 +128,12 @@ export function RegistroForm() {
         label="Teléfono"
         name="telefono"
         type="tel"
-        placeholder="+57 300 000 0000"
+        required
+        placeholder="3001234567"
         autoComplete="tel"
+        maxLength={20}
+        error={errors.telefono}
+        hint={!errors.telefono ? 'Número móvil colombiano (10 dígitos comenzando con 3)' : undefined}
       />
 
       <div className="relative">
@@ -119,10 +142,11 @@ export function RegistroForm() {
           name="password"
           type={showPassword ? 'text' : 'password'}
           required
-          placeholder="Mínimo 8 caracteres"
+          placeholder="Mínimo 10 caracteres"
           autoComplete="new-password"
+          maxLength={128}
           error={errors.password}
-          hint={!errors.password ? 'Mínimo 8 caracteres' : undefined}
+          hint={!errors.password ? 'Mínimo 10 caracteres, no debe contener tu nombre o email' : undefined}
         />
         <button
           type="button"
@@ -142,6 +166,7 @@ export function RegistroForm() {
           required
           placeholder="Repetí tu contraseña"
           autoComplete="new-password"
+          maxLength={128}
           error={errors.confirmarPassword}
         />
         <button
@@ -154,13 +179,63 @@ export function RegistroForm() {
         </button>
       </div>
 
+      {/* Habeas Data — Ley 1581 de 2012 */}
+      <div className="space-y-3 rounded-lg border border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-700/50 dark:bg-zinc-900/30">
+        <label className="flex items-start gap-3 text-sm text-zinc-800 dark:text-zinc-200">
+          <input
+            type="checkbox"
+            name="aceptaTerminos"
+            value="on"
+            required
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-400 bg-white text-emerald-600 accent-emerald-600 focus:ring-emerald-500 focus:ring-offset-white dark:border-zinc-600 dark:bg-zinc-800 dark:text-emerald-500 dark:focus:ring-offset-zinc-900"
+          />
+          <span className="leading-relaxed">
+            Acepto los{' '}
+            <Link
+              href="/terminos"
+              target="_blank"
+              className="font-medium text-emerald-700 underline hover:no-underline dark:text-emerald-400"
+            >
+              Términos y Condiciones
+            </Link>
+          </span>
+        </label>
+        {errors.aceptaTerminos && (
+          <p className="ml-7 text-xs text-red-700 dark:text-red-400" role="alert">{errors.aceptaTerminos}</p>
+        )}
+
+        <label className="flex items-start gap-3 text-sm text-zinc-800 dark:text-zinc-200">
+          <input
+            type="checkbox"
+            name="aceptaPrivacidad"
+            value="on"
+            required
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-400 bg-white text-emerald-600 accent-emerald-600 focus:ring-emerald-500 focus:ring-offset-white dark:border-zinc-600 dark:bg-zinc-800 dark:text-emerald-500 dark:focus:ring-offset-zinc-900"
+          />
+          <span className="leading-relaxed">
+            Autorizo el tratamiento de mis datos personales según la{' '}
+            <Link
+              href="/politica-privacidad"
+              target="_blank"
+              className="font-medium text-emerald-700 underline hover:no-underline dark:text-emerald-400"
+            >
+              Política de Tratamiento de Datos
+            </Link>{' '}
+            (Ley 1581 de 2012)
+          </span>
+        </label>
+        {errors.aceptaPrivacidad && (
+          <p className="ml-7 text-xs text-red-700 dark:text-red-400" role="alert">{errors.aceptaPrivacidad}</p>
+        )}
+      </div>
+
       <Button type="submit" size="lg" loading={isPending} className="w-full">
         Crear cuenta
       </Button>
 
-      <p className="text-center text-sm text-zinc-500">
+      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         ¿Ya tenés cuenta?{' '}
-        <Link href="/login" className="font-medium text-emerald-400 hover:underline">
+        <Link href="/login" className="font-medium text-emerald-700 hover:underline dark:text-emerald-400">
           Iniciá sesión
         </Link>
       </p>

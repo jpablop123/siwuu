@@ -162,7 +162,7 @@ function BannerForm({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-500">{error}</p>
+        <p className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">{error}</p>
       )}
 
       <div className="flex gap-3">
@@ -175,7 +175,7 @@ function BannerForm({
           <Check className="h-4 w-4" />
           Guardar banner
         </Button>
-        <Button type="button" onClick={onCancel} variant="secondary" disabled={loading}>
+        <Button type="button" onClick={onCancel} variant="outline" disabled={loading}>
           <X className="h-4 w-4" />
           Cancelar
         </Button>
@@ -382,7 +382,7 @@ export function BannersManager({ banners: initialBanners }: BannersManagerProps)
             setEditingId(null)
             setFormError(null)
           }}
-          variant="secondary"
+          variant="outline"
         >
           <Plus className="h-4 w-4" />
           Agregar banner

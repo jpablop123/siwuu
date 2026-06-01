@@ -1,33 +1,39 @@
 import { createClient } from '@/lib/supabase/server'
-import { HeroBanner, type HeroBannerSlide } from '@/components/store/HeroBanner'
+import { HeroBanner } from '@/components/store/HeroBanner'
 import { CategoryRow } from '@/components/store/CategoryRow'
 import { ProductCarousel } from '@/components/store/ProductCarousel'
 import { PromoBanner } from '@/components/store/PromoBanner'
 import { FeaturesBar } from '@/components/store/FeaturesBar'
-import type { Producto, Categoria } from '@/types'
+import { getBannersActivos, getCategoriasActivas, getTiendaConfig } from '@/lib/cache/cms'
+import type { Producto } from '@/types'
 
-export const dynamic = 'force-dynamic'
+/**
+ * ISR — la home se regenera cada 60 s.
+ *
+ * Antes tenía `force-dynamic` → render desde cero en cada visit → 4 queries
+ * a Supabase en cada hit. Para una home pública que cambia raramente
+ * (banners, destacados, categorías) eso es desperdicio.
+ *
+ * Con `revalidate = 60`, Next sirve la versión cacheada de edge para todos
+ * los visitantes durante 60 s. La primera request después del minuto
+ * regenera en background sin bloquear al usuario.
+ *
+ * Si el admin guarda un banner o producto, los server actions ya hacen
+ * `revalidatePath('/')` (ver admin.ts), así que el cambio se ve en
+ * segundos, no esperando los 60 s.
+ */
+export const revalidate = 60
 
 export default async function HomePage() {
   const supabase = createClient()
 
-  // Cuatro queries en paralelo — ninguna depende de auth, todas son públicas
-  const [bannersRes, configRes, categoriasRes, productosRes] = await Promise.all([
-    // Hero carousel: solo slides activos, ordenados por `orden`
-    supabase
-      .from('tienda_banners')
-      .select('id, titulo, subtitulo, tag, imagen_url, cta_label, cta_href, cta_secundario_label, cta_secundario_href, align')
-      .eq('activo', true)
-      .order('orden')
-      .order('created_at'),
-
-    // Singleton: configuración del promo banner
-    supabase.from('tienda_configuracion').select('*').single(),
-
-    // Categorías para la fila de navegación
-    supabase.from('categorias').select('*').eq('activa', true).order('orden').limit(8),
-
-    // Últimos 20 productos activos — separamos en JS para evitar dos queries
+  // 3 queries CMS cacheadas en memoria (Next unstable_cache, 5 min TTL)
+  // + 1 query no-cacheable (productos pueden cambiar más seguido).
+  // En el caso típico, las 3 primeras devuelven 0 ms; queda solo la 4ta.
+  const [slides, config, categoriasFull, productosRes] = await Promise.all([
+    getBannersActivos(),
+    getTiendaConfig(),
+    getCategoriasActivas(),
     supabase
       .from('productos')
       .select('*')
@@ -36,9 +42,7 @@ export default async function HomePage() {
       .limit(20),
   ])
 
-  const slides = (bannersRes.data as HeroBannerSlide[]) || []
-  const config = configRes.data
-  const categorias = (categoriasRes.data as Categoria[]) || []
+  const categorias = categoriasFull.slice(0, 8)
   const todos = (productosRes.data as Producto[]) || []
 
   const lanzamientos = todos.slice(0, 10)

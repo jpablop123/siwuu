@@ -31,17 +31,17 @@ export default function RecuperarPasswordPage() {
     return (
       <div className="mx-auto flex min-h-[60vh] max-w-md items-center px-4 py-16">
         <div className="w-full text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
-            <Mail className="h-8 w-8 text-emerald-400" aria-hidden="true" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/15">
+            <Mail className="h-8 w-8 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-zinc-100">Revisá tu bandeja de entrada</h1>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Revisá tu bandeja de entrada</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             Te enviamos instrucciones para recuperar tu contraseña.
             El link expira en 1 hora.
           </p>
           <Link
             href="/"
-            className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-emerald-400 hover:underline"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Volver al inicio
@@ -55,15 +55,15 @@ export default function RecuperarPasswordPage() {
     <div className="mx-auto flex min-h-[60vh] max-w-md items-center px-4 py-16">
       <div className="w-full">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-zinc-100">Recuperar contraseña</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Recuperar contraseña</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             Ingresá tu email y te enviaremos instrucciones
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+            <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400" role="alert">
               {error}
             </div>
           )}
@@ -82,8 +82,8 @@ export default function RecuperarPasswordPage() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          <Link href="/login" className="font-medium text-emerald-400 hover:underline">
+        <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <Link href="/login" className="font-medium text-emerald-700 hover:underline dark:text-emerald-400">
             Volver al login
           </Link>
         </p>

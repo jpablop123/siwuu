@@ -38,8 +38,12 @@ export default function NuevaPasswordPage() {
     const password = formData.get('password')?.toString() ?? ''
     const confirmar = formData.get('confirmarPassword')?.toString() ?? ''
 
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres')
+    if (password.length < 10) {
+      setError('La contraseña debe tener al menos 10 caracteres')
+      return
+    }
+    if (password.length > 128) {
+      setError('La contraseña es demasiado larga')
       return
     }
     if (password !== confirmar) {
@@ -68,14 +72,14 @@ export default function NuevaPasswordPage() {
       <div className="w-full">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Nueva contraseña</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             Ingresá tu nueva contraseña
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+            <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400" role="alert">
               {error}
             </div>
           )}
@@ -86,9 +90,10 @@ export default function NuevaPasswordPage() {
               name="password"
               type={showPassword ? 'text' : 'password'}
               required
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Mínimo 10 caracteres"
               autoComplete="new-password"
-              hint="Mínimo 8 caracteres"
+              maxLength={128}
+              hint="Mínimo 10 caracteres"
             />
             <button
               type="button"
@@ -108,6 +113,7 @@ export default function NuevaPasswordPage() {
               required
               placeholder="Repetí tu contraseña"
               autoComplete="new-password"
+              maxLength={128}
             />
             <button
               type="button"

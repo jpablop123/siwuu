@@ -92,6 +92,9 @@ export interface Pedido {
   direccion_envio: string
   subtotal: number
   costo_envio: number
+  descuento: number
+  cupon_id: string | null
+  codigo_cupon: string | null
   total: number
   estado: EstadoPedido
   notas: string | null

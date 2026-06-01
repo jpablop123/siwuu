@@ -171,6 +171,14 @@ export default async function AdminDetallePedidoPage({ params }: Props) {
                 <span className="text-zinc-500">Envío</span>
                 <span>{pedido.costo_envio === 0 ? 'Gratis' : formatCOP(pedido.costo_envio)}</span>
               </div>
+              {pedido.descuento > 0 && (
+                <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+                  <span>
+                    Descuento{pedido.codigo_cupon ? <span className="font-mono"> ({pedido.codigo_cupon})</span> : ''}
+                  </span>
+                  <span>−{formatCOP(pedido.descuento)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-base font-bold">
                 <span>Total</span>
                 <span>{formatCOP(pedido.total)}</span>
@@ -233,13 +241,31 @@ export default async function AdminDetallePedidoPage({ params }: Props) {
               </div>
               <div>
                 <p className="text-zinc-600 dark:text-zinc-400">Ganancia</p>
-                <p className={`text-lg font-bold ${tieneCostos && ganancia > 0 ? 'text-green-400' : tieneCostos ? 'text-red-400' : 'text-zinc-500'}`}>
+                <p
+                  className={`text-lg font-bold ${
+                    tieneCostos && ganancia > 0
+                      ? 'text-green-700 dark:text-green-400'
+                      : tieneCostos
+                        ? 'text-red-700 dark:text-red-400'
+                        : 'text-zinc-500'
+                  }`}
+                >
                   {tieneCostos ? formatCOP(ganancia) : '\u2014'}
                 </p>
               </div>
               <div>
                 <p className="text-zinc-600 dark:text-zinc-400">Margen</p>
-                <p className={`text-lg font-bold ${margen && parseFloat(margen) > 30 ? 'text-green-400' : margen && parseFloat(margen) > 15 ? 'text-yellow-400' : margen ? 'text-red-400' : 'text-zinc-500'}`}>
+                <p
+                  className={`text-lg font-bold ${
+                    margen && parseFloat(margen) > 30
+                      ? 'text-green-700 dark:text-green-400'
+                      : margen && parseFloat(margen) > 15
+                        ? 'text-amber-700 dark:text-yellow-400'
+                        : margen
+                          ? 'text-red-700 dark:text-red-400'
+                          : 'text-zinc-500'
+                  }`}
+                >
                   {margen ? `${margen}%` : '\u2014'}
                 </p>
               </div>

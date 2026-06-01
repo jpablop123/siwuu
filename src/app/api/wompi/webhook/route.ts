@@ -51,17 +51,44 @@ export async function POST(request: Request) {
   }
 
   // ───────────────────────────────────────────────────────────
-  // Paso 4 — Procesar solo si es pago aprobado
+  // Paso 4 — Procesar solo eventos de transacción
   // ───────────────────────────────────────────────────────────
-  if (
-    evento.event !== 'transaction.updated' ||
-    evento.data?.transaction?.status !== 'APPROVED'
-  ) {
+  if (evento.event !== 'transaction.updated') {
     return new Response('ok', { status: 200 })
   }
 
-  const { id: transactionId, reference: referencia } = evento.data.transaction
+  const {
+    id: transactionId,
+    status: txStatus,
+    reference: referencia,
+    payment_method_type: metodo,
+  } = evento.data.transaction
   const supabase = createServiceClient()
+
+  // ───────────────────────────────────────────────────────────
+  // Paso 4.5 — Persistir el método de pago en cualquier evento
+  //
+  // Esto corre para PENDING/APPROVED/DECLINED/VOIDED. Permite
+  // que el cron de expiración (migración 016) distinga métodos
+  // asíncronos (PSE → 4h) de instantáneos (tarjeta → 30 min).
+  //
+  // Idempotente: la cláusula `.is('metodo', null)` evita
+  // pisar un método ya registrado por un webhook anterior.
+  // ───────────────────────────────────────────────────────────
+  if (metodo) {
+    await supabase
+      .from('pagos')
+      .update({ metodo })
+      .eq('wompi_referencia', referencia)
+      .is('metodo', null)
+  }
+
+  // ───────────────────────────────────────────────────────────
+  // Paso 4.6 — A partir de acá solo continuamos si APPROVED
+  // ───────────────────────────────────────────────────────────
+  if (txStatus !== 'APPROVED') {
+    return new Response('ok', { status: 200 })
+  }
 
   try {
     // ───────────────────────────────────────────────────────────
@@ -130,7 +157,7 @@ export async function POST(request: Request) {
       .from('pedidos')
       .select(`
         numero, nombre_cliente, email_cliente,
-        subtotal, costo_envio, total,
+        subtotal, costo_envio, descuento, codigo_cupon, total,
         ciudad, departamento, direccion_envio,
         pedido_items (
           nombre_producto, variante,
@@ -160,6 +187,8 @@ export async function POST(request: Request) {
         })),
         subtotal:       pedidoCompleto.subtotal,
         costoEnvio:     pedidoCompleto.costo_envio,
+        descuento:      pedidoCompleto.descuento,
+        codigoCupon:    pedidoCompleto.codigo_cupon,
         total:          pedidoCompleto.total,
         ciudad:         pedidoCompleto.ciudad,
         departamento:   pedidoCompleto.departamento,

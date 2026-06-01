@@ -21,7 +21,7 @@ export default async function DireccionesPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-zinc-100">Mis direcciones</h1>
+      <h1 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">Mis direcciones</h1>
       <DireccionesClient direcciones={(direcciones as Direccion[]) || []} />
     </div>
   )

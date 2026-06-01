@@ -62,7 +62,7 @@ export function DireccionesClient({ direcciones }: DireccionesClientProps) {
             className="relative rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 shadow-sm"
           >
             {dir.principal && (
-              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400">
                 <Star className="h-3 w-3" aria-hidden="true" />
                 Principal
               </span>

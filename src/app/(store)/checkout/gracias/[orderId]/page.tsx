@@ -15,7 +15,7 @@ export default async function GraciasPage({ params }: Props) {
   const [{ data: pedido }, { data: { user } }] = await Promise.all([
     serviceClient
       .from('pedidos')
-      .select('*, items:pedido_items(*)')
+      .select('*, items:pedido_items(*), pagos(metodo)')
       .eq('id', params.orderId)
       .single(),
     supabase.auth.getUser(),
@@ -24,6 +24,11 @@ export default async function GraciasPage({ params }: Props) {
   if (!pedido) {
     return <PedidoNoEncontrado />
   }
+
+  // `pagos` puede venir como array (relación 1-N) — tomamos el más reciente.
+  // El método puede ser null si Wompi aún no firmó ningún evento.
+  const pagosArr = (pedido as unknown as { pagos?: Array<{ metodo: string | null }> }).pagos
+  const metodoPago = pagosArr && pagosArr.length > 0 ? pagosArr[0].metodo : null
 
   // ── Validación de acceso ─────────────────────────────────────────────
   //
@@ -51,6 +56,7 @@ export default async function GraciasPage({ params }: Props) {
     <PedidoEstado
       pedidoInicial={pedido as Pedido & { items: PedidoItem[] }}
       isGuest={esInvitado}
+      metodoPago={metodoPago}
     />
   )
 }

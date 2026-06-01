@@ -12,6 +12,22 @@ export const resend = new Resend(resendApiKey)
 export const FROM_EMAIL = `${process.env.NEXT_PUBLIC_STORE_NAME ?? 'SiwuuShop'} <pedidos@${process.env.RESEND_FROM_DOMAIN ?? 'resend.dev'}>`
 
 // ---------------------------------------------------------------------------
+// Escape HTML — usar en todo valor controlado por usuario que se inyecte
+// en un template de email. Sin esto, un nombre tipo "<script>alert(1)</script>"
+// se renderiza tal cual en el cliente de correo.
+// ---------------------------------------------------------------------------
+
+export function escapeHtml(value: string | null | undefined): string {
+  if (value == null) return ''
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// ---------------------------------------------------------------------------
 // Base HTML del email
 // ---------------------------------------------------------------------------
 
@@ -22,22 +38,25 @@ export function buildEmailBase({
 }: {
   titulo: string
   preheader: string
+  /** HTML pre-construido. NO se escapa (las piezas internas deben venir escapadas). */
   contenido: string
 }): string {
-  const storeName = process.env.NEXT_PUBLIC_STORE_NAME ?? 'SiwuuShop'
+  const storeName = escapeHtml(process.env.NEXT_PUBLIC_STORE_NAME ?? 'SiwuuShop')
   const year = new Date().getFullYear()
+  const tituloSafe = escapeHtml(titulo)
+  const preheaderSafe = escapeHtml(preheader)
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${titulo}</title>
+  <title>${tituloSafe}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased">
   <!-- Preheader (invisible en el body, visible en el inbox preview) -->
   <span style="display:none;font-size:1px;color:#f3f4f6;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">
-    ${preheader}
+    ${preheaderSafe}
   </span>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6">
@@ -88,9 +107,11 @@ export function buildItemRow(item: {
   precioUnitario: number
 }): string {
   const subtotal = item.cantidad * item.precioUnitario
+  const nombreSafe = escapeHtml(item.nombre)
+  const varianteSafe = item.variante ? escapeHtml(item.variante) : null
   return `<tr>
     <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151">
-      ${item.nombre}${item.variante ? `<br><span style="font-size:12px;color:#9ca3af">${item.variante}</span>` : ''}
+      ${nombreSafe}${varianteSafe ? `<br><span style="font-size:12px;color:#9ca3af">${varianteSafe}</span>` : ''}
     </td>
     <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151;text-align:center">
       ${item.cantidad}

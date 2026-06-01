@@ -78,34 +78,31 @@ function makeSupabaseMock(options: {
   pedidosUpdateResult?: { data: Array<{ id: string }> | null; error: null }
   pedidosSelectResult?: { data: typeof PEDIDO_COMPLETO | null; error: null }
 }) {
-  // Cadena fluida: from → update/select/eq/neq/single → resolución
-  const makeChain = (resolvedValue: unknown) => {
+  // Cadena fluida + thenable: cualquier método encadenado devuelve la
+  // misma cadena, y la cadena resuelve via `then` con `terminalValue`.
+  // Permite usos como `.update().eq().select()` (await terminal) y
+  // `.select().eq().single()` (await en single).
+  const makeChain = (terminalValue: unknown, singleValue: unknown) => {
     const chain: Record<string, unknown> = {}
-    for (const method of ['update', 'eq', 'neq', 'insert']) {
+    for (const method of ['update', 'select', 'eq', 'neq', 'is', 'insert', 'order', 'limit']) {
       chain[method] = vi.fn().mockReturnValue(chain)
     }
-    chain.select = vi.fn().mockResolvedValue(resolvedValue)
-    chain.single  = vi.fn().mockResolvedValue(
-      options.pedidosSelectResult ?? { data: PEDIDO_COMPLETO, error: null }
-    )
+    chain.single = vi.fn().mockResolvedValue(singleValue)
+    chain.then = (resolve: (v: unknown) => unknown) => resolve(terminalValue)
     return chain
   }
 
   const fromMock = vi.fn((tabla: string) => {
-    if (tabla === 'pagos')   return makeChain(options.pagosUpdateResult)
-    if (tabla === 'pedidos') {
-      // En el webhook se hace: update().eq().neq().select() → pedidosUpdateResult
-      //                    y:  select(…).eq(id).single()    → pedidosSelectResult
-      // Devolvemos una cadena que maneja ambos casos
-      const chain = makeChain(options.pedidosUpdateResult ?? { data: [{ id: PEDIDO_ID }], error: null })
-      // Sobreescribir single para el SELECT de detalle
-      chain.single = vi.fn().mockResolvedValue(
-        options.pedidosSelectResult ?? { data: PEDIDO_COMPLETO, error: null }
-      )
-      return chain
+    if (tabla === 'pagos') {
+      return makeChain(options.pagosUpdateResult, options.pagosUpdateResult)
     }
-    // Tabla desconocida — retornar cadena neutra
-    return makeChain({ data: null, error: null })
+    if (tabla === 'pedidos') {
+      return makeChain(
+        options.pedidosUpdateResult ?? { data: [{ id: PEDIDO_ID }], error: null },
+        options.pedidosSelectResult ?? { data: PEDIDO_COMPLETO, error: null },
+      )
+    }
+    return makeChain({ data: null, error: null }, { data: null, error: null })
   })
 
   return { from: fromMock }

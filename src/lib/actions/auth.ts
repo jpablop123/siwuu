@@ -6,24 +6,44 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { enviarEmailBienvenida } from '@/lib/resend/emails'
 import { rlAuth } from '@/lib/ratelimit'
+import { registroSchema, flattenErrors } from '@/lib/validators/auth'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+function extractIp(h: Headers): string | null {
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? h.get('x-real-ip')
+    ?? null
+}
+
 export async function registrarse(
   formData: FormData
-): Promise<{ ok?: boolean; error?: string }> {
-  const rl = await rlAuth(headers())
+): Promise<{ ok?: boolean; fieldErrors?: Record<string, string>; error?: string }> {
+  const h = headers()
+  const rl = await rlAuth(h)
   if (!rl.ok) return { error: 'Demasiados intentos. Esperá unos minutos e intentá de nuevo.' }
 
-  const nombre = formData.get('nombre')?.toString().trim() ?? ''
-  const email = formData.get('email')?.toString().trim() ?? ''
-  const password = formData.get('password')?.toString() ?? ''
-  const confirmarPassword = formData.get('confirmarPassword')?.toString() ?? ''
+  // ── Validación con schema compartido ──────────────────────────────
+  const parsed = registroSchema.safeParse({
+    nombre:             formData.get('nombre')?.toString() ?? '',
+    email:              formData.get('email')?.toString() ?? '',
+    telefono:           formData.get('telefono')?.toString() ?? '',
+    password:           formData.get('password')?.toString() ?? '',
+    confirmarPassword:  formData.get('confirmarPassword')?.toString() ?? '',
+    aceptaTerminos:     formData.get('aceptaTerminos')?.toString() ?? '',
+    aceptaPrivacidad:   formData.get('aceptaPrivacidad')?.toString() ?? '',
+    website:            formData.get('website')?.toString() ?? '',
+  })
 
-  if (nombre.length < 2) return { error: 'El nombre debe tener al menos 2 caracteres' }
-  if (!EMAIL_REGEX.test(email)) return { error: 'Email inválido' }
-  if (password.length < 8) return { error: 'La contraseña debe tener al menos 8 caracteres' }
-  if (password !== confirmarPassword) return { error: 'Las contraseñas no coinciden' }
+  if (!parsed.success) {
+    // Honeypot lleno → respondemos como si fuera registro exitoso
+    // pero sin hacer nada. El bot no sabe que lo detectamos.
+    const fieldErrors = flattenErrors(parsed.error)
+    if (fieldErrors.website) return { ok: true }
+    return { fieldErrors }
+  }
+
+  const { nombre, email, telefono, password } = parsed.data
 
   const supabase = createClient()
   const { data, error } = await supabase.auth.signUp({
@@ -35,11 +55,47 @@ export async function registrarse(
     },
   })
 
-  if (error) return { error: error.message }
+  if (error) {
+    // No exponer mensajes específicos de Supabase (pueden filtrar info).
+    console.error('[registrarse] signUp error:', error.message)
+    return { error: 'No pudimos crear la cuenta. Verificá los datos e intentá de nuevo.' }
+  }
 
-  // Supabase no retorna error cuando el email ya existe — retorna identities vacío
+  // ── Anti-enumeración ──────────────────────────────────────────────
+  //
+  // Cuando el email ya existe, Supabase no devuelve error: devuelve
+  // un user con `identities` vacío y NO manda email de confirmación.
+  // Antes acá devolvíamos "Ya existe una cuenta con ese email" — eso
+  // permite enumerar el padrón de clientes. Ahora respondemos `ok: true`
+  // igual que un registro nuevo. El usuario legítimo que ya tiene
+  // cuenta no recibe email — para él el flujo es invisible.
   if (data.user?.identities?.length === 0) {
-    return { error: 'Ya existe una cuenta con ese email' }
+    return { ok: true }
+  }
+
+  // ── Persistir teléfono + evidencia de consentimiento ──────────────
+  //
+  // El trigger `handle_new_user` ya creó la fila en profiles con el
+  // nombre del raw_user_meta_data. Le agregamos los datos extra.
+  if (data.user) {
+    const now = new Date().toISOString()
+    const serviceClient = createServiceClient()
+    const { error: profileError } = await serviceClient
+      .from('profiles')
+      .update({
+        telefono,
+        accepted_tos_at:     now,
+        accepted_privacy_at: now,
+        consent_ip:          extractIp(h),
+      })
+      .eq('id', data.user.id)
+
+    if (profileError) {
+      console.error('[registrarse] no se pudo persistir consentimiento:', profileError.message)
+      // No bloqueamos el signup — la cuenta ya existe en auth.users.
+      // El flag NULL en profiles le permite a un job de cleanup
+      // detectar esto y pedir reconsentimiento en el próximo login.
+    }
   }
 
   // Email de bienvenida — best effort
@@ -117,7 +173,8 @@ export async function actualizarPassword(
   const password = formData.get('password')?.toString() ?? ''
   const confirmarPassword = formData.get('confirmarPassword')?.toString() ?? ''
 
-  if (password.length < 8) return { error: 'La contraseña debe tener al menos 8 caracteres' }
+  if (password.length < 10) return { error: 'La contraseña debe tener al menos 10 caracteres' }
+  if (password.length > 128) return { error: 'La contraseña es demasiado larga' }
   if (password !== confirmarPassword) return { error: 'Las contraseñas no coinciden' }
 
   const supabase = createClient()

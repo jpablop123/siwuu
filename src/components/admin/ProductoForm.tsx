@@ -233,7 +233,7 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
   return (
     <form onSubmit={handleSubmit}>
       {error && (
-        <div className="mb-4 rounded-xl bg-rose-500/10 border border-rose-500/30 px-4 py-3 text-sm text-rose-400" role="alert">
+        <div className="mb-4 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400" role="alert">
           {error}
         </div>
       )}
@@ -365,10 +365,10 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
               <p
                 className={`mt-3 text-sm font-medium ${
                   parseInt(margen) > 30
-                    ? 'text-emerald-400'
+                    ? 'text-emerald-700 dark:text-emerald-400'
                     : parseInt(margen) >= 15
-                      ? 'text-amber-400'
-                      : 'text-rose-400'
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : 'text-rose-700 dark:text-rose-400'
                 }`}
               >
                 Margen: {margen}% · Ganancia por unidad: {formatCOP(ganancia)}
@@ -445,7 +445,7 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
                     <button
                       type="button"
                       onClick={() => removeVariante(i)}
-                      className="text-red-400 hover:text-red-600"
+                      className="text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       aria-label="Eliminar variante"
                     >
                       <X className="h-4 w-4" />
@@ -493,7 +493,7 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
               <button
                 type="button"
                 onClick={addVariante}
-                className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400 hover:text-emerald-300"
+                className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
               >
                 <Plus className="h-3.5 w-3.5" /> Agregar variante
               </button>
@@ -544,7 +544,7 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
           Cancelar
         </Button>
         {guardado && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">
             <Check className="h-4 w-4" /> Guardado
           </span>
         )}

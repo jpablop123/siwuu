@@ -23,18 +23,41 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createClient()
   const { data: producto } = await supabase
     .from('productos')
-    .select('nombre, descripcion_corta, imagenes')
+    .select('nombre, descripcion_corta, descripcion, imagenes, precio_venta')
     .eq('slug', params.slug)
     .single()
 
   if (!producto) return { title: 'Producto no encontrado' }
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://siwuu.vercel.app'
+  const url = `${baseUrl}/productos/${params.slug}`
+  const imagen = producto.imagenes?.[0] ?? `${baseUrl}/og-default.png`
+  const descripcion =
+    producto.descripcion_corta ||
+    producto.descripcion?.slice(0, 160) ||
+    `${producto.nombre} con envío a toda Colombia. Pagá con tarjeta, PSE, Nequi.`
+
   return {
     title: producto.nombre,
-    description: producto.descripcion_corta || undefined,
+    description: descripcion,
+    keywords: [producto.nombre, 'comprar', 'Colombia', 'envío', 'accesorios celular'],
+    alternates: { canonical: url },
     openGraph: {
-      images: producto.imagenes?.[0] ? [producto.imagenes[0]] : [],
+      type: 'website',
+      url,
+      title: producto.nombre,
+      description: descripcion,
+      images: [{ url: imagen, alt: producto.nombre, width: 1200, height: 630 }],
+      locale: 'es_CO',
+      siteName: 'SiwuuShop',
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: producto.nombre,
+      description: descripcion,
+      images: [imagen],
+    },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large' } },
   }
 }
 
@@ -56,6 +79,56 @@ export default async function ProductoPage({ params }: Props) {
     ? calcularDescuento(p.precio_venta, p.precio_tachado)
     : 0
 
+  // ── JSON-LD para SEO: Product + Offer + BreadcrumbList ────────────────────
+  // Google lo lee para generar rich snippets (precio, stock, imagen) en SERP
+  // y para listar en Google Shopping.
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://siwuu.vercel.app'
+  const productoUrl = `${baseUrl}/productos/${p.slug}`
+  const enStock = p.stock_virtual > 0
+
+  const productSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.nombre,
+    description: p.descripcion_corta || p.descripcion || p.nombre,
+    image: p.imagenes && p.imagenes.length > 0 ? p.imagenes : [`${baseUrl}/og-default.png`],
+    sku: p.id,
+    brand: { '@type': 'Brand', name: 'SiwuuShop' },
+    offers: {
+      '@type': 'Offer',
+      url: productoUrl,
+      priceCurrency: 'COP',
+      price: p.precio_venta,
+      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      availability: enStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: { '@type': 'Organization', name: 'SiwuuShop' },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'CO' },
+        shippingRate: { '@type': 'MonetaryAmount', value: '15000', currency: 'COP' },
+      },
+    },
+  }
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio',    item: baseUrl },
+      { '@type': 'ListItem', position: 2, name: 'Productos', item: `${baseUrl}/productos` },
+      ...(p.categoria
+        ? [{
+            '@type': 'ListItem',
+            position: 3,
+            name: p.categoria.nombre,
+            item: `${baseUrl}/categoria/${p.categoria.slug}`,
+          }]
+        : []),
+      { '@type': 'ListItem', position: p.categoria ? 4 : 3, name: p.nombre, item: productoUrl },
+    ],
+  }
+
   // Productos relacionados de la misma categoría
   const { data: relacionados } = p.categoria_id
     ? await supabase
@@ -69,6 +142,16 @@ export default async function ProductoPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+      {/* JSON-LD para Google: Product (rich snippets + Shopping) + Breadcrumb */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
         <Link href="/" className="text-zinc-500 transition-colors hover:text-emerald-400">

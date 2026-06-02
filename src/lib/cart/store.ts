@@ -49,7 +49,10 @@ function itemToRow(item: CartItem, userId: string) {
     nombre: item.nombre,
     precio: item.precio,
     imagen: item.imagen,
-    variante: item.variante ?? null,
+    // PostgreSQL trata NULL como distinto en UNIQUE constraints — por eso
+    // antes se duplicaban filas. Usamos string vacío para que el UNIQUE
+    // (user_id, producto_id, variante) deduplique correctamente.
+    variante: item.variante ?? '',
     cantidad: item.cantidad,
   }
 }
@@ -63,19 +66,13 @@ async function upsertItemRemoto(item: CartItem, userId: string) {
 
 async function eliminarItemRemoto(productoId: string, variante: string | undefined, userId: string) {
   const supabase = createClient()
-  let query = supabase
+  await supabase
     .from('carrito_items')
     .delete()
     .eq('user_id', userId)
     .eq('producto_id', productoId)
-
-  if (variante) {
-    query = query.eq('variante', variante)
-  } else {
-    query = query.is('variante', null)
-  }
-
-  await query
+    // Schema garantiza NOT NULL con default '', así que la igualdad simple basta
+    .eq('variante', variante ?? '')
 }
 
 async function vaciarRemotoBulk(userId: string) {
@@ -164,18 +161,19 @@ export const useCartStore = create<CartStore>()(
         const mergeado: CartItem[] = [...itemsLocales]
 
         for (const remoto of itemsRemotos) {
+          // Normalizar a string vacío para comparar (DB guarda '', local puede tener undefined)
+          const remotoVar = remoto.variante || ''
           const existeLocal = itemsLocales.find(
-            (l) => l.productoId === remoto.producto_id &&
-              (l.variante ?? null) === (remoto.variante ?? null)
+            (l) => l.productoId === remoto.producto_id && (l.variante || '') === remotoVar
           )
           if (!existeLocal) {
             mergeado.push({
-              id: `${remoto.producto_id}-${remoto.variante ?? 'default'}-${remoto.id}`,
+              id: `${remoto.producto_id}-${remotoVar || 'default'}-${remoto.id}`,
               productoId: remoto.producto_id,
               nombre: remoto.nombre,
               precio: Number(remoto.precio),
               imagen: remoto.imagen ?? '',
-              variante: remoto.variante ?? undefined,
+              variante: remotoVar || undefined,
               cantidad: remoto.cantidad,
             })
           }

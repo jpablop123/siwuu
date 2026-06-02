@@ -23,13 +23,26 @@ interface CuponRow {
   usos_maximos: number | null
   usos_actuales: number
   expira_en: string | null
+  inicia_en: string | null
+  descuento_maximo: number | null
+  categoria_id: string | null
+  solo_primera_compra: boolean
+  un_uso_por_cliente: boolean
   activo: boolean
   created_at: string
 }
 
+interface CategoriaOption { id: string; nombre: string }
+
 type Editor = { mode: 'crear' } | { mode: 'editar'; cupon: CuponRow } | null
 
-export function CuponesManager({ cuponesIniciales }: { cuponesIniciales: CuponRow[] }) {
+export function CuponesManager({
+  cuponesIniciales,
+  categorias,
+}: {
+  cuponesIniciales: CuponRow[]
+  categorias: CategoriaOption[]
+}) {
   const router = useRouter()
   const [editor, setEditor] = useState<Editor>(null)
   const [isPending, startTransition] = useTransition()
@@ -157,6 +170,7 @@ export function CuponesManager({ cuponesIniciales }: { cuponesIniciales: CuponRo
       {editor && (
         <CuponEditor
           editor={editor}
+          categorias={categorias}
           onClose={() => setEditor(null)}
           onSaved={() => {
             setEditor(null)
@@ -172,10 +186,12 @@ export function CuponesManager({ cuponesIniciales }: { cuponesIniciales: CuponRo
 
 function CuponEditor({
   editor,
+  categorias,
   onClose,
   onSaved,
 }: {
   editor: { mode: 'crear' } | { mode: 'editar'; cupon: CuponRow }
+  categorias: CategoriaOption[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -185,9 +201,8 @@ function CuponEditor({
 
   // Valor inicial (datetime-local necesita 'YYYY-MM-DDTHH:mm')
   const initial = editor.mode === 'editar' ? editor.cupon : null
-  const initialExpira = initial?.expira_en
-    ? new Date(initial.expira_en).toISOString().slice(0, 16)
-    : ''
+  const initialExpira = initial?.expira_en ? new Date(initial.expira_en).toISOString().slice(0, 16) : ''
+  const initialInicia = initial?.inicia_en ? new Date(initial.inicia_en).toISOString().slice(0, 16) : ''
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -320,13 +335,85 @@ function CuponEditor({
             hint={!fieldErrors.usos_maximos ? 'Dejá vacío para usos ilimitados' : undefined}
           />
 
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Inicia (opcional)"
+              name="inicia_en"
+              type="datetime-local"
+              defaultValue={initialInicia}
+              error={fieldErrors.inicia_en}
+              hint={!fieldErrors.inicia_en ? 'Activación programada' : undefined}
+            />
+            <Input
+              label="Expira (opcional)"
+              name="expira_en"
+              type="datetime-local"
+              defaultValue={initialExpira}
+              error={fieldErrors.expira_en}
+            />
+          </div>
+
           <Input
-            label="Expira en (opcional)"
-            name="expira_en"
-            type="datetime-local"
-            defaultValue={initialExpira}
-            error={fieldErrors.expira_en}
+            label="Descuento máximo (opcional)"
+            name="descuento_maximo"
+            type="number"
+            min="0"
+            step="1000"
+            defaultValue={initial?.descuento_maximo ?? ''}
+            placeholder="50000"
+            error={fieldErrors.descuento_maximo}
+            hint={!fieldErrors.descuento_maximo ? 'Cap al monto descontado (útil para % grandes)' : undefined}
           />
+
+          <div>
+            <label htmlFor="categoria-select" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Solo para una categoría (opcional)
+            </label>
+            <select
+              id="categoria-select"
+              name="categoria_id"
+              defaultValue={initial?.categoria_id ?? ''}
+              className="flex w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 focus-visible:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            >
+              <option value="">Cualquier categoría</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+            {fieldErrors.categoria_id && (
+              <p className="mt-1 text-xs text-red-700 dark:text-red-400" role="alert">{fieldErrors.categoria_id}</p>
+            )}
+          </div>
+
+          <div className="space-y-2.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/50">
+            <label className="flex items-start gap-2.5 text-sm text-zinc-800 dark:text-zinc-200">
+              <input
+                type="checkbox"
+                name="solo_primera_compra"
+                value="true"
+                defaultChecked={initial?.solo_primera_compra ?? false}
+                className="mt-0.5 h-4 w-4 rounded border-zinc-400 bg-white text-emerald-600 accent-emerald-600 dark:border-zinc-600 dark:bg-zinc-800"
+              />
+              <span>
+                Solo primera compra
+                <span className="block text-xs text-zinc-500">El cliente no debe tener pedidos pagados previos</span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-2.5 text-sm text-zinc-800 dark:text-zinc-200">
+              <input
+                type="checkbox"
+                name="un_uso_por_cliente"
+                value="true"
+                defaultChecked={initial?.un_uso_por_cliente ?? false}
+                className="mt-0.5 h-4 w-4 rounded border-zinc-400 bg-white text-emerald-600 accent-emerald-600 dark:border-zinc-600 dark:bg-zinc-800"
+              />
+              <span>
+                Un uso por cliente
+                <span className="block text-xs text-zinc-500">Cada email/usuario solo puede usarlo una vez</span>
+              </span>
+            </label>
+          </div>
 
           <label className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
             <input

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { rlAuth } from '@/lib/ratelimit'
 
 /**
@@ -24,9 +24,18 @@ export async function POST(request: Request) {
       )
     }
 
-    const body = await request.json() as { codigo?: unknown; subtotal?: unknown }
-    const codigo = typeof body.codigo === 'string' ? body.codigo.trim() : ''
+    const body = await request.json() as {
+      codigo?: unknown
+      subtotal?: unknown
+      email?: unknown
+      productoIds?: unknown
+    }
+    const codigo   = typeof body.codigo === 'string' ? body.codigo.trim() : ''
     const subtotal = typeof body.subtotal === 'number' ? body.subtotal : 0
+    const email    = typeof body.email === 'string' ? body.email.trim().toLowerCase() : null
+    const productoIds = Array.isArray(body.productoIds)
+      ? (body.productoIds as unknown[]).filter((v): v is string => typeof v === 'string')
+      : []
 
     if (!codigo || codigo.length > 30) {
       return NextResponse.json({ valido: false, mensaje: 'Código inválido' })
@@ -35,10 +44,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ valido: false, mensaje: 'Carrito vacío' })
     }
 
+    // Si está logueado, podemos validar condiciones "primera compra" y
+    // "un uso por cliente" por user_id (más confiable que email).
+    const cookieClient = createClient()
+    const { data: { user } } = await cookieClient.auth.getUser()
+
     const supabase = createServiceClient()
+
+    // Si vinieron product IDs, traemos sus categoria_ids para la validación
+    // de "solo para una categoría".
+    let categoriaIds: string[] | null = null
+    if (productoIds.length > 0) {
+      const { data: prods } = await supabase
+        .from('productos')
+        .select('categoria_id')
+        .in('id', productoIds)
+      categoriaIds = (prods ?? [])
+        .map((p) => p.categoria_id)
+        .filter((c): c is string => !!c)
+    }
+
     const { data, error } = await supabase.rpc('validar_cupon', {
-      p_codigo:   codigo,
-      p_subtotal: subtotal,
+      p_codigo:        codigo,
+      p_subtotal:      subtotal,
+      p_email:         email,
+      p_user_id:       user?.id ?? null,
+      p_categoria_ids: categoriaIds,
     })
 
     if (error || !data || data.length === 0) {

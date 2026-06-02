@@ -16,17 +16,23 @@ interface CuponRow {
   usos_maximos: number | null
   usos_actuales: number
   expira_en: string | null
+  inicia_en: string | null
+  descuento_maximo: number | null
+  categoria_id: string | null
+  solo_primera_compra: boolean
+  un_uso_por_cliente: boolean
   activo: boolean
   created_at: string
 }
 
+interface CategoriaOption { id: string; nombre: string }
+
 export default async function CuponesPage() {
   const supabase = createServiceClient()
-  const { data: cupones } = await supabase
-    .from('cupones')
-    .select('*')
-    .order('activo', { ascending: false })
-    .order('created_at', { ascending: false })
+  const [cuponesRes, categoriasRes] = await Promise.all([
+    supabase.from('cupones').select('*').order('activo', { ascending: false }).order('created_at', { ascending: false }),
+    supabase.from('categorias').select('id, nombre').eq('activa', true).order('nombre'),
+  ])
 
   return (
     <div>
@@ -39,7 +45,10 @@ export default async function CuponesPage() {
         </div>
       </div>
 
-      <CuponesManager cuponesIniciales={(cupones ?? []) as CuponRow[]} />
+      <CuponesManager
+        cuponesIniciales={(cuponesRes.data ?? []) as CuponRow[]}
+        categorias={(categoriasRes.data ?? []) as CategoriaOption[]}
+      />
     </div>
   )
 }

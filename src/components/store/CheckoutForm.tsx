@@ -72,7 +72,15 @@ export function CheckoutForm() {
       const res = await fetch('/api/cupones/validar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo, subtotal }),
+        body: JSON.stringify({
+          codigo,
+          subtotal,
+          // Necesarios para validar condiciones: "primera compra",
+          // "un uso por cliente" y "solo para una categoría".
+          // Si el form todavía no tiene email, el endpoint usará el del JWT.
+          email: form.email || null,
+          productoIds: items.map((i) => i.productoId),
+        }),
       })
       const data = (await res.json()) as { valido: boolean; codigo?: string; descuento?: number; mensaje?: string }
       if (data.valido && data.codigo && typeof data.descuento === 'number') {

@@ -74,9 +74,9 @@ export type Database = {
         Relationships: []
       }
       cupones: {
-        Row: { id: string; codigo: string; tipo: 'porcentaje' | 'fijo'; valor: number; minimo_compra: number | null; usos_maximos: number | null; usos_actuales: number; expira_en: string | null; activo: boolean; created_at: string; updated_at: string }
-        Insert: { id?: string; codigo: string; tipo: 'porcentaje' | 'fijo'; valor: number; minimo_compra?: number | null; usos_maximos?: number | null; usos_actuales?: number; expira_en?: string | null; activo?: boolean; created_at?: string; updated_at?: string }
-        Update: { codigo?: string; tipo?: 'porcentaje' | 'fijo'; valor?: number; minimo_compra?: number | null; usos_maximos?: number | null; expira_en?: string | null; activo?: boolean; updated_at?: string }
+        Row: { id: string; codigo: string; tipo: 'porcentaje' | 'fijo'; valor: number; minimo_compra: number | null; usos_maximos: number | null; usos_actuales: number; expira_en: string | null; activo: boolean; solo_primera_compra: boolean; categoria_id: string | null; un_uso_por_cliente: boolean; inicia_en: string | null; descuento_maximo: number | null; created_at: string; updated_at: string }
+        Insert: { id?: string; codigo: string; tipo: 'porcentaje' | 'fijo'; valor: number; minimo_compra?: number | null; usos_maximos?: number | null; usos_actuales?: number; expira_en?: string | null; activo?: boolean; solo_primera_compra?: boolean; categoria_id?: string | null; un_uso_por_cliente?: boolean; inicia_en?: string | null; descuento_maximo?: number | null; created_at?: string; updated_at?: string }
+        Update: { codigo?: string; tipo?: 'porcentaje' | 'fijo'; valor?: number; minimo_compra?: number | null; usos_maximos?: number | null; expira_en?: string | null; activo?: boolean; solo_primera_compra?: boolean; categoria_id?: string | null; un_uso_por_cliente?: boolean; inicia_en?: string | null; descuento_maximo?: number | null; updated_at?: string }
         Relationships: []
       }
       pedido_items: {
@@ -151,7 +151,7 @@ export type Database = {
         Returns: Array<{ pedido_id: string; token_acceso: string; descuento: number; total_final: number }>
       }
       validar_cupon: {
-        Args: { p_codigo: string; p_subtotal: number }
+        Args: { p_codigo: string; p_subtotal: number; p_email?: string | null; p_user_id?: string | null; p_categoria_ids?: string[] | null }
         Returns: Array<{ cupon_id: string | null; codigo: string; tipo: 'porcentaje' | 'fijo' | null; valor: number | null; descuento: number; minimo_compra: number | null; error: string | null }>
       }
     }

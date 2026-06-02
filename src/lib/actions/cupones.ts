@@ -37,13 +37,18 @@ export async function crearCupon(
   const { supabase } = await verificarAdmin()
 
   const parsed = cuponInputSchema.safeParse({
-    codigo:         formData.get('codigo')?.toString() ?? '',
-    tipo:           formData.get('tipo')?.toString() ?? '',
-    valor:          formData.get('valor')?.toString() ?? '',
-    minimo_compra:  formData.get('minimo_compra')?.toString() ?? '',
-    usos_maximos:   formData.get('usos_maximos')?.toString() ?? '',
-    expira_en:      formData.get('expira_en')?.toString() ?? '',
-    activo:         formData.get('activo')?.toString() ?? 'true',
+    codigo:              formData.get('codigo')?.toString() ?? '',
+    tipo:                formData.get('tipo')?.toString() ?? '',
+    valor:               formData.get('valor')?.toString() ?? '',
+    minimo_compra:       formData.get('minimo_compra')?.toString() ?? '',
+    usos_maximos:        formData.get('usos_maximos')?.toString() ?? '',
+    expira_en:           formData.get('expira_en')?.toString() ?? '',
+    inicia_en:           formData.get('inicia_en')?.toString() ?? '',
+    descuento_maximo:    formData.get('descuento_maximo')?.toString() ?? '',
+    categoria_id:        formData.get('categoria_id')?.toString() ?? '',
+    solo_primera_compra: formData.get('solo_primera_compra')?.toString() ?? '',
+    un_uso_por_cliente:  formData.get('un_uso_por_cliente')?.toString() ?? '',
+    activo:              formData.get('activo')?.toString() ?? 'true',
   })
 
   if (!parsed.success) {
@@ -51,13 +56,18 @@ export async function crearCupon(
   }
 
   const { error } = await supabase.from('cupones').insert({
-    codigo:        parsed.data.codigo,
-    tipo:          parsed.data.tipo,
-    valor:         parsed.data.valor,
-    minimo_compra: parsed.data.minimo_compra,
-    usos_maximos:  parsed.data.usos_maximos,
-    expira_en:     parsed.data.expira_en,
-    activo:        parsed.data.activo ?? true,
+    codigo:              parsed.data.codigo,
+    tipo:                parsed.data.tipo,
+    valor:               parsed.data.valor,
+    minimo_compra:       parsed.data.minimo_compra,
+    usos_maximos:        parsed.data.usos_maximos,
+    expira_en:           parsed.data.expira_en,
+    inicia_en:           parsed.data.inicia_en,
+    descuento_maximo:    parsed.data.descuento_maximo,
+    categoria_id:        parsed.data.categoria_id,
+    solo_primera_compra: parsed.data.solo_primera_compra ?? false,
+    un_uso_por_cliente:  parsed.data.un_uso_por_cliente ?? false,
+    activo:              parsed.data.activo ?? true,
   })
 
   if (error) {
@@ -80,13 +90,18 @@ export async function actualizarCupon(
   const { supabase } = await verificarAdmin()
 
   const parsed = cuponInputSchema.safeParse({
-    codigo:         formData.get('codigo')?.toString() ?? '',
-    tipo:           formData.get('tipo')?.toString() ?? '',
-    valor:          formData.get('valor')?.toString() ?? '',
-    minimo_compra:  formData.get('minimo_compra')?.toString() ?? '',
-    usos_maximos:   formData.get('usos_maximos')?.toString() ?? '',
-    expira_en:      formData.get('expira_en')?.toString() ?? '',
-    activo:         formData.get('activo')?.toString() ?? 'true',
+    codigo:              formData.get('codigo')?.toString() ?? '',
+    tipo:                formData.get('tipo')?.toString() ?? '',
+    valor:               formData.get('valor')?.toString() ?? '',
+    minimo_compra:       formData.get('minimo_compra')?.toString() ?? '',
+    usos_maximos:        formData.get('usos_maximos')?.toString() ?? '',
+    expira_en:           formData.get('expira_en')?.toString() ?? '',
+    inicia_en:           formData.get('inicia_en')?.toString() ?? '',
+    descuento_maximo:    formData.get('descuento_maximo')?.toString() ?? '',
+    categoria_id:        formData.get('categoria_id')?.toString() ?? '',
+    solo_primera_compra: formData.get('solo_primera_compra')?.toString() ?? '',
+    un_uso_por_cliente:  formData.get('un_uso_por_cliente')?.toString() ?? '',
+    activo:              formData.get('activo')?.toString() ?? 'true',
   })
 
   if (!parsed.success) {
@@ -96,14 +111,19 @@ export async function actualizarCupon(
   const { error } = await supabase
     .from('cupones')
     .update({
-      codigo:        parsed.data.codigo,
-      tipo:          parsed.data.tipo,
-      valor:         parsed.data.valor,
-      minimo_compra: parsed.data.minimo_compra,
-      usos_maximos:  parsed.data.usos_maximos,
-      expira_en:     parsed.data.expira_en,
-      activo:        parsed.data.activo ?? true,
-      updated_at:    new Date().toISOString(),
+      codigo:              parsed.data.codigo,
+      tipo:                parsed.data.tipo,
+      valor:               parsed.data.valor,
+      minimo_compra:       parsed.data.minimo_compra,
+      usos_maximos:        parsed.data.usos_maximos,
+      expira_en:           parsed.data.expira_en,
+      inicia_en:           parsed.data.inicia_en,
+      descuento_maximo:    parsed.data.descuento_maximo,
+      categoria_id:        parsed.data.categoria_id,
+      solo_primera_compra: parsed.data.solo_primera_compra ?? false,
+      un_uso_por_cliente:  parsed.data.un_uso_por_cliente ?? false,
+      activo:              parsed.data.activo ?? true,
+      updated_at:          new Date().toISOString(),
     })
     .eq('id', id)
 

@@ -228,15 +228,16 @@ function CuponEditor({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center sm:p-6"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900 sm:max-h-[calc(100dvh-3rem)]"
         noValidate
       >
-        <div className="mb-4 flex items-center justify-between">
+        {/* Header sticky */}
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
           <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
             {editor.mode === 'crear' ? 'Nuevo cupón' : `Editar ${initial?.codigo}`}
           </h2>
@@ -250,13 +251,15 @@ function CuponEditor({
           </button>
         </div>
 
-        {globalError && (
-          <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400" role="alert">
-            {globalError}
-          </div>
-        )}
+        {/* Scroll body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {globalError && (
+            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400" role="alert">
+              {globalError}
+            </div>
+          )}
 
-        <div className="space-y-4">
+          <div className="space-y-4">
           <Input
             label="Código"
             name="codigo"
@@ -425,12 +428,14 @@ function CuponEditor({
             />
             Activo (visible para clientes)
           </label>
+          </div>
         </div>
 
-        <div className="mt-6 flex gap-3">
+        {/* Footer sticky con los botones */}
+        <div className="flex shrink-0 gap-3 border-t border-zinc-200 bg-zinc-50/50 px-6 py-4 dark:border-zinc-700 dark:bg-zinc-800/30">
           <Button type="submit" loading={isPending} className="flex-1">
             <Check className="h-4 w-4" />
-            {editor.mode === 'crear' ? 'Crear' : 'Guardar cambios'}
+            {editor.mode === 'crear' ? 'Crear cupón' : 'Guardar cambios'}
           </Button>
           <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
             Cancelar

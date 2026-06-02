@@ -98,6 +98,11 @@ export interface Pedido {
   total: number
   estado: EstadoPedido
   notas: string | null
+  // Datos de facturación (migración 022)
+  tipo_persona: 'natural' | 'juridica'
+  tipo_documento: 'CC' | 'CE' | 'PA' | 'TI' | 'NIT' | null
+  numero_documento: string | null
+  razon_social: string | null
   created_at: string
   updated_at: string
   // Joined

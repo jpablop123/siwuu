@@ -45,6 +45,11 @@ export interface PedidoInput {
   appUrl: string
   /** Código de cupón (opcional). La validación + descuento se calculan server-side. */
   codigoCupon?: string | null
+  /** Datos de facturación (DIAN). Default natural sin documento. */
+  tipoPersona?: 'natural' | 'juridica'
+  tipoDocumento?: 'CC' | 'CE' | 'PA' | 'TI' | 'NIT' | null
+  numeroDocumento?: string | null
+  razonSocial?: string | null
 }
 
 export interface PedidoCreado {
@@ -88,6 +93,21 @@ function validarInput(
       return { ok: false, error: 'Items inválidos', status: 400 }
     }
   }
+
+  // Consistencia tipo persona / documento
+  if (input.tipoPersona === 'juridica') {
+    if (!input.razonSocial || !input.razonSocial.trim()) {
+      return { ok: false, error: 'Razón social requerida para persona jurídica', status: 400 }
+    }
+    if (input.tipoDocumento !== 'NIT' || !input.numeroDocumento) {
+      return { ok: false, error: 'NIT requerido para persona jurídica', status: 400 }
+    }
+  } else if (input.tipoPersona === 'natural' || input.tipoPersona == null) {
+    // Natural: documento es requerido (CC/CE/PA/TI)
+    if (input.tipoDocumento && !['CC','CE','PA','TI'].includes(input.tipoDocumento)) {
+      return { ok: false, error: 'Tipo de documento inválido para persona natural', status: 400 }
+    }
+  }
   return null
 }
 
@@ -103,6 +123,10 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
     nombre, email, telefono, departamento, ciudad, direccion,
     barrio = null, indicaciones = null, guardarDireccion = false,
     items, userId = null, appUrl, codigoCupon = null,
+    tipoPersona = 'natural',
+    tipoDocumento = null,
+    numeroDocumento = null,
+    razonSocial = null,
   } = input
 
   const supabase = createServiceClient()
@@ -184,6 +208,10 @@ export async function procesarPedido(input: PedidoInput): Promise<PedidoResult> 
       p_items:        itemsJson,
       p_referencia:   referencia,
       p_codigo_cupon: codigoCupon,
+      p_tipo_persona:     tipoPersona,
+      p_tipo_documento:   tipoDocumento,
+      p_numero_documento: numeroDocumento,
+      p_razon_social:     razonSocial,
     }
   )
 

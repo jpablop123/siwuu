@@ -10,7 +10,7 @@ import { useCart, useCartTotal } from '@/lib/cart/store'
 import { COSTO_ENVIO, COSTO_ENVIO_GRATIS_DESDE } from '@/lib/utils'
 import { Price } from '@/components/store/Price'
 import Image from 'next/image'
-import { Tag, X, MapPin, Plus, Check, Lock } from 'lucide-react'
+import { Tag, X, MapPin, Plus, Check, Lock, User, Building2 } from 'lucide-react'
 import { DEPARTAMENTOS, ciudadesDe } from '@/lib/colombia/ubicaciones'
 import { cn } from '@/lib/utils'
 import { Combobox } from '@/components/ui/Combobox'
@@ -193,6 +193,11 @@ export function CheckoutForm() {
     direccion: '',
     barrio: '',
     indicaciones: '',
+    // Datos de facturación / tipo de cliente
+    tipoPersona: 'natural' as 'natural' | 'juridica',
+    tipoDocumento: 'CC' as 'CC' | 'CE' | 'PA' | 'TI' | 'NIT',
+    numeroDocumento: '',
+    razonSocial: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -255,6 +260,11 @@ export function CheckoutForm() {
           codigoCupon: cuponAplicado?.codigo ?? null,
           // Solo guardar si está logueado, eligió "nueva dirección" y tildó el check
           guardarDireccion: isLoggedIn && selectedDireccionId === 'nueva' && guardarDireccion,
+          // Tipo de cliente para factura
+          tipoPersona:     form.tipoPersona,
+          tipoDocumento:   form.tipoDocumento,
+          numeroDocumento: form.numeroDocumento.trim(),
+          razonSocial:     form.tipoPersona === 'juridica' ? form.razonSocial.trim() : null,
         }),
       })
 
@@ -325,6 +335,112 @@ export function CheckoutForm() {
               para vincular el pedido a tu historial. También podés continuar sin cuenta.
             </div>
           )}
+
+          {/* Tipo de cliente — Natural vs Jurídica */}
+          <div>
+            <h2 className="mb-4 text-lg font-semibold">¿A nombre de quién va la compra?</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key: 'natural',  label: 'Persona Natural',  desc: 'Para personas',           Icon: User },
+                { key: 'juridica', label: 'Persona Jurídica', desc: 'Para empresas (con NIT)', Icon: Building2 },
+              ] as const).map(({ key, label, desc, Icon }) => {
+                const isSelected = form.tipoPersona === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setForm((prev) => ({
+                      ...prev,
+                      tipoPersona: key,
+                      // Si pasa a Jurídica forzamos NIT; si Natural, default CC
+                      tipoDocumento: key === 'juridica' ? 'NIT' : (prev.tipoDocumento === 'NIT' ? 'CC' : prev.tipoDocumento),
+                      // Si pasa a Natural, limpiamos razón social
+                      razonSocial: key === 'natural' ? '' : prev.razonSocial,
+                    }))}
+                    className={cn(
+                      'flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-colors',
+                      isSelected
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
+                        : 'border-zinc-200 bg-white hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500',
+                    )}
+                    aria-pressed={isSelected}
+                  >
+                    <Icon
+                      className={cn(
+                        'h-5 w-5 shrink-0',
+                        isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500',
+                      )}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0">
+                      <p className={cn(
+                        'text-sm font-semibold',
+                        isSelected
+                          ? 'text-emerald-800 dark:text-emerald-300'
+                          : 'text-zinc-900 dark:text-zinc-100',
+                      )}>
+                        {label}
+                      </p>
+                      <p className="text-xs text-zinc-500">{desc}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Campos condicionales según tipo */}
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {form.tipoPersona === 'juridica' && (
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Razón social"
+                    name="razon_social"
+                    value={form.razonSocial}
+                    onChange={(e) => setForm({ ...form, razonSocial: e.target.value })}
+                    placeholder="Nombre legal de la empresa"
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="tipo-doc" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Tipo de documento
+                </label>
+                <select
+                  id="tipo-doc"
+                  name="tipo_documento"
+                  value={form.tipoDocumento}
+                  onChange={(e) => setForm({ ...form, tipoDocumento: e.target.value as typeof form.tipoDocumento })}
+                  required
+                  disabled={form.tipoPersona === 'juridica'}
+                  className="flex w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 focus-visible:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                >
+                  {form.tipoPersona === 'juridica' ? (
+                    <option value="NIT">NIT</option>
+                  ) : (
+                    <>
+                      <option value="CC">Cédula de ciudadanía</option>
+                      <option value="CE">Cédula de extranjería</option>
+                      <option value="PA">Pasaporte</option>
+                      <option value="TI">Tarjeta de identidad</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <Input
+                label={form.tipoPersona === 'juridica' ? 'Número NIT' : 'Número de documento'}
+                name="numero_documento"
+                value={form.numeroDocumento}
+                onChange={(e) => setForm({ ...form, numeroDocumento: e.target.value.replace(/[^\d-]/g, '') })}
+                placeholder={form.tipoPersona === 'juridica' ? '900123456-7' : '1020304050'}
+                required
+                inputMode="numeric"
+                maxLength={20}
+              />
+            </div>
+          </div>
 
           <div>
             <h2 className="mb-4 text-lg font-semibold">Datos de contacto</h2>

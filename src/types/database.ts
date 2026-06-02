@@ -68,9 +68,9 @@ export type Database = {
         Relationships: []
       }
       pedidos: {
-        Row: { id: string; numero: string; user_id: string | null; token_acceso: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; descuento: number; total: number; cupon_id: string | null; codigo_cupon: string | null; estado: EstadoPedido; notas: string | null; numero_guia: string | null; created_at: string; updated_at: string }
-        Insert: { id?: string; numero: string; user_id?: string | null; token_acceso?: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; descuento?: number; total: number; cupon_id?: string | null; codigo_cupon?: string | null; estado?: EstadoPedido; notas?: string | null; created_at?: string; updated_at?: string }
-        Update: { user_id?: string | null; estado?: EstadoPedido; notas?: string | null; nombre_cliente?: string; telefono_cliente?: string; ciudad?: string; departamento?: string; direccion_envio?: string; numero_guia?: string | null; descuento?: number; cupon_id?: string | null; codigo_cupon?: string | null; updated_at?: string }
+        Row: { id: string; numero: string; user_id: string | null; token_acceso: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; descuento: number; total: number; cupon_id: string | null; codigo_cupon: string | null; estado: EstadoPedido; notas: string | null; numero_guia: string | null; tipo_persona: 'natural' | 'juridica'; tipo_documento: 'CC' | 'CE' | 'PA' | 'TI' | 'NIT' | null; numero_documento: string | null; razon_social: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; numero: string; user_id?: string | null; token_acceso?: string; email_cliente: string; nombre_cliente: string; telefono_cliente: string; ciudad: string; departamento: string; direccion_envio: string; subtotal: number; costo_envio: number; descuento?: number; total: number; cupon_id?: string | null; codigo_cupon?: string | null; estado?: EstadoPedido; notas?: string | null; tipo_persona?: 'natural' | 'juridica'; tipo_documento?: 'CC' | 'CE' | 'PA' | 'TI' | 'NIT' | null; numero_documento?: string | null; razon_social?: string | null; created_at?: string; updated_at?: string }
+        Update: { user_id?: string | null; estado?: EstadoPedido; notas?: string | null; nombre_cliente?: string; telefono_cliente?: string; ciudad?: string; departamento?: string; direccion_envio?: string; numero_guia?: string | null; descuento?: number; cupon_id?: string | null; codigo_cupon?: string | null; tipo_persona?: 'natural' | 'juridica'; tipo_documento?: 'CC' | 'CE' | 'PA' | 'TI' | 'NIT' | null; numero_documento?: string | null; razon_social?: string | null; updated_at?: string }
         Relationships: []
       }
       cupones: {
@@ -147,6 +147,10 @@ export type Database = {
           p_items:        Json
           p_referencia:   string
           p_codigo_cupon?: string | null
+          p_tipo_persona?: 'natural' | 'juridica'
+          p_tipo_documento?: 'CC' | 'CE' | 'PA' | 'TI' | 'NIT' | null
+          p_numero_documento?: string | null
+          p_razon_social?: string | null
         }
         Returns: Array<{ pedido_id: string; token_acceso: string; descuento: number; total_final: number }>
       }

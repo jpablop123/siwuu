@@ -37,6 +37,10 @@ export async function POST(request: Request) {
       indicaciones?: string
       codigoCupon?: string
       guardarDireccion?: boolean
+      tipoPersona?: 'natural' | 'juridica'
+      tipoDocumento?: 'CC' | 'CE' | 'PA' | 'TI' | 'NIT'
+      numeroDocumento?: string
+      razonSocial?: string | null
       // Solo extraemos productoId/cantidad/variante — precio siempre desde BD
       items: Array<{ productoId: string; cantidad: number; variante?: string; [k: string]: unknown }>
     }
@@ -77,6 +81,11 @@ export async function POST(request: Request) {
       userId,
       appUrl:       getAppUrl(request),
       codigoCupon:  body.codigoCupon?.trim() || null,
+      // Pasamos los datos de facturación (el service y RPC los persisten)
+      tipoPersona:     body.tipoPersona     ?? 'natural',
+      tipoDocumento:   body.tipoDocumento   ?? null,
+      numeroDocumento: body.numeroDocumento?.trim() || null,
+      razonSocial:     body.razonSocial?.trim() || null,
     })
 
     if (!result.ok) {

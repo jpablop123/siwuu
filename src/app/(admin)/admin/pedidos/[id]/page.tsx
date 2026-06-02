@@ -125,6 +125,29 @@ export default async function AdminDetallePedidoPage({ params }: Props) {
                 <p className="mt-1 italic text-zinc-500">{pedido.notas}</p>
               )}
             </div>
+
+            {/* Facturación: aparece solo si hay datos cargados (pedidos pre-022 quedan vacíos) */}
+            {(pedido.tipo_persona || pedido.numero_documento || pedido.razon_social) && (
+              <div className="mt-4 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-xs dark:border-zinc-700 dark:bg-zinc-800/50">
+                <p className="mb-1 font-semibold uppercase tracking-wider text-zinc-500">
+                  Datos de facturación
+                </p>
+                {pedido.tipo_persona === 'juridica' ? (
+                  <>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                      {pedido.razon_social ?? '—'}
+                    </p>
+                    <p className="text-zinc-600 dark:text-zinc-400">
+                      NIT: {pedido.numero_documento ?? '—'}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-zinc-700 dark:text-zinc-300">
+                    Persona natural · {pedido.tipo_documento ?? 'CC'}: {pedido.numero_documento ?? '—'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Items del Pedido */}

@@ -10,9 +10,10 @@ import { useCart, useCartTotal } from '@/lib/cart/store'
 import { COSTO_ENVIO, COSTO_ENVIO_GRATIS_DESDE } from '@/lib/utils'
 import { Price } from '@/components/store/Price'
 import Image from 'next/image'
-import { Tag, X, MapPin, Plus, Check } from 'lucide-react'
+import { Tag, X, MapPin, Plus, Check, Lock } from 'lucide-react'
 import { DEPARTAMENTOS, ciudadesDe } from '@/lib/colombia/ubicaciones'
 import { cn } from '@/lib/utils'
+import { Combobox } from '@/components/ui/Combobox'
 import type { Direccion } from '@/types'
 
 // Tipos globales del widget de Wompi
@@ -320,7 +321,39 @@ export function CheckoutForm() {
             <h2 className="mb-4 text-lg font-semibold">Datos de contacto</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Input label="Nombre completo" name="nombre" value={form.nombre} onChange={handleChange} required />
-              <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} required />
+
+              {/* Email: bloqueado cuando hay sesión iniciada — el email vive en
+                  auth.users y cambiarlo requiere flujo dedicado (con confirmación
+                  por email). En checkout solo se muestra, no se edita. */}
+              {isLoggedIn ? (
+                <div className="w-full">
+                  <label htmlFor="email-readonly" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="email-readonly"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      readOnly
+                      aria-readonly="true"
+                      className="flex w-full cursor-not-allowed rounded-xl border-2 border-zinc-200 bg-zinc-100 px-4 py-2.5 pr-10 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400"
+                    />
+                    <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true" />
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Asociado a tu cuenta. Cambialo desde{' '}
+                    <Link href="/cuenta" className="text-emerald-700 hover:underline dark:text-emerald-400">
+                      Mi perfil
+                    </Link>
+                    .
+                  </p>
+                </div>
+              ) : (
+                <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} required />
+              )}
+
               <Input label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} required />
             </div>
           </div>
@@ -387,48 +420,31 @@ export function CheckoutForm() {
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="departamento-select" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Departamento
-                </label>
-                <select
-                  id="departamento-select"
-                  name="departamento"
-                  value={form.departamento}
-                  onChange={(e) =>
-                    // Al cambiar de departamento, la ciudad anterior pierde sentido — reset
-                    setForm({ ...form, departamento: e.target.value, ciudad: '' })
-                  }
-                  required
-                  className="flex w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 focus-visible:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                >
-                  <option value="">Seleccioná...</option>
-                  {DEPARTAMENTOS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="ciudad-select" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Ciudad
-                </label>
-                <select
-                  id="ciudad-select"
-                  name="ciudad"
-                  value={form.ciudad}
-                  onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
-                  required
-                  disabled={!form.departamento}
-                  className="flex w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 focus-visible:border-emerald-500/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                >
-                  <option value="">
-                    {form.departamento ? 'Seleccioná...' : 'Elegí un departamento primero'}
-                  </option>
-                  {ciudadesDe(form.departamento).map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
+              <Combobox
+                label="Departamento"
+                name="departamento"
+                options={DEPARTAMENTOS}
+                value={form.departamento}
+                onChange={(v) =>
+                  // Al cambiar de departamento, la ciudad anterior pierde sentido
+                  setForm({ ...form, departamento: v, ciudad: '' })
+                }
+                placeholder="Seleccioná un departamento"
+                searchPlaceholder="Buscar departamento..."
+                required
+              />
+              <Combobox
+                label="Ciudad"
+                name="ciudad"
+                options={ciudadesDe(form.departamento)}
+                value={form.ciudad}
+                onChange={(v) => setForm({ ...form, ciudad: v })}
+                placeholder="Seleccioná una ciudad"
+                searchPlaceholder="Buscar ciudad..."
+                disabled={!form.departamento}
+                disabledMessage="Elegí un departamento primero"
+                required
+              />
               <div className="sm:col-span-2">
                 <Input label="Dirección" name="direccion" value={form.direccion} onChange={handleChange} required placeholder="Calle 123 #45-67" />
               </div>

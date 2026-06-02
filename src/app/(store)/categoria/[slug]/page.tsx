@@ -46,8 +46,11 @@ export default async function CategoriaPage({ params, searchParams }: Props) {
 
   // Buscar la categoría en el cache compartido (sin query a Supabase si está caliente)
   const categorias = await getCategoriasActivas()
-  const cat = categorias.find((c) => c.slug === params.slug) as Categoria | undefined
-  if (!cat) notFound()
+  const found = categorias.find((c) => c.slug === params.slug) as Categoria | undefined
+  if (!found) notFound()
+  // Reasignamos a un const explícitamente no-undefined para que los closures
+  // de abajo (buildHref) heredan el tipo estrechado.
+  const cat: Categoria = found
 
   // Query de productos con filtros
   let query = supabase

@@ -14,6 +14,7 @@ import { Tag, X, MapPin, Plus, Check, Lock } from 'lucide-react'
 import { DEPARTAMENTOS, ciudadesDe } from '@/lib/colombia/ubicaciones'
 import { cn } from '@/lib/utils'
 import { Combobox } from '@/components/ui/Combobox'
+import { PhoneInput } from '@/components/ui/PhoneInput'
 import type { Direccion } from '@/types'
 
 // Tipos globales del widget de Wompi
@@ -354,7 +355,13 @@ export function CheckoutForm() {
                 <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} required />
               )}
 
-              <Input label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} required />
+              <PhoneInput
+                label="Teléfono"
+                name="telefono"
+                value={form.telefono}
+                onChange={(v) => setForm({ ...form, telefono: v })}
+                required
+              />
             </div>
           </div>
 

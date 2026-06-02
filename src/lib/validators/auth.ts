@@ -16,9 +16,11 @@ import { z } from 'zod'
 // Rechaza emojis, números, símbolos.
 const NAME_REGEX = /^[\p{L}\s'-]+$/u
 
-// Móvil colombiano: 10 dígitos comenzando con 3.
-// Se normaliza quitando todo lo no-numérico antes de validar.
-const COL_MOBILE_REGEX = /^(57)?3\d{9}$/
+// Formato internacional E.164 simplificado: +CODE seguido de dígitos.
+// El componente PhoneInput genera exactamente "+57 3001234567",
+// "+1 5551234567", etc. (código entre 1-4 dígitos, espacio, número entre 6-15).
+// La validación deep (cantidad correcta por país) ya pasa client-side en PhoneInput.
+const INTL_PHONE_REGEX = /^\+\d{1,4}\s\d{6,15}$/
 
 // Listas defensivas — no exhaustivas, pero atrapan bots y typos triviales.
 // El chequeo real contra breached passwords (HIBP) queda como futuro.
@@ -76,11 +78,10 @@ export const registroSchema = z
     telefono: z
       .string()
       .trim()
-      .max(20)
-      .transform((v) => v.replace(/\D/g, '')) // quitar espacios, +, paréntesis
-      .refine(
-        (v) => COL_MOBILE_REGEX.test(v),
-        'Ingresá un número móvil colombiano válido (ej: 3001234567)',
+      .max(25)
+      .regex(
+        INTL_PHONE_REGEX,
+        'Formato inválido. Esperado: +XX 1234567890 (incluye el código de país)',
       ),
 
     password: z

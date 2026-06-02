@@ -65,7 +65,9 @@ export type PedidoResult =
 // ────────────────────────────────────────────────────────────
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const TELEFONO_REGEX = /^[+]?[\d\s\-().]{7,15}$/
+// Acepta formato internacional "+CODE numero" (lo emite PhoneInput) o el legacy
+// solo-dígitos por compatibilidad con pedidos viejos.
+const TELEFONO_REGEX = /^(\+\d{1,4}\s\d{6,15}|\d{7,15})$/
 
 function validarInput(
   input: PedidoInput

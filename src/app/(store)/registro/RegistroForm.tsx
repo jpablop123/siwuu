@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Eye, EyeOff, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { registroSchema, flattenErrors } from '@/lib/validators/auth'
+import { PhoneInput } from '@/components/ui/PhoneInput'
 
 interface FieldErrors {
   nombre?: string
@@ -124,16 +125,13 @@ export function RegistroForm() {
         error={errors.email}
       />
 
-      <Input
+      <PhoneInput
         label="Teléfono"
         name="telefono"
-        type="tel"
+        value=""
+        onChange={() => { /* uncontrolled — el hidden input lleva el valor a FormData */ }}
         required
-        placeholder="3001234567"
-        autoComplete="tel"
-        maxLength={20}
         error={errors.telefono}
-        hint={!errors.telefono ? 'Número móvil colombiano (10 dígitos comenzando con 3)' : undefined}
       />
 
       <div className="relative">

@@ -8,6 +8,7 @@ import { Eye, EyeOff, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { registroSchema, flattenErrors } from '@/lib/validators/auth'
 import { PhoneInput } from '@/components/ui/PhoneInput'
+import { CountrySelect } from '@/components/ui/CountrySelect'
 
 interface FieldErrors {
   nombre?: string
@@ -26,6 +27,13 @@ export function RegistroForm() {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [registrado, setRegistrado] = useState(false)
   const [isPending, startTransition] = useTransition()
+  /**
+   * País de residencia del usuario. Drives:
+   * - El código del teléfono (+57, +58, +52...)
+   * - El cap de dígitos del input de teléfono
+   * - Default: Colombia
+   */
+  const [paisIso, setPaisIso] = useState('CO')
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -36,6 +44,7 @@ export function RegistroForm() {
       nombre:             formData.get('nombre')?.toString() ?? '',
       email:              formData.get('email')?.toString() ?? '',
       telefono:           formData.get('telefono')?.toString() ?? '',
+      pais:               formData.get('pais')?.toString() ?? '',
       password:           formData.get('password')?.toString() ?? '',
       confirmarPassword:  formData.get('confirmarPassword')?.toString() ?? '',
       aceptaTerminos:     formData.get('aceptaTerminos')?.toString() ?? '',
@@ -125,6 +134,16 @@ export function RegistroForm() {
         error={errors.email}
       />
 
+      <CountrySelect
+        label="País"
+        name="pais"
+        nameNombre="pais_nombre"
+        value={paisIso}
+        onChange={setPaisIso}
+        required
+        hint="El código del teléfono se ajusta automáticamente"
+      />
+
       <PhoneInput
         label="Teléfono"
         name="telefono"
@@ -132,6 +151,7 @@ export function RegistroForm() {
         onChange={() => { /* uncontrolled — el hidden input lleva el valor a FormData */ }}
         required
         error={errors.telefono}
+        lockedCountryIso={paisIso}
       />
 
       <div className="relative">

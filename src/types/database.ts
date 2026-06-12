@@ -56,9 +56,9 @@ export type Database = {
         ]
       }
       profiles: {
-        Row: { id: string; nombre: string | null; telefono: string | null; cedula: string | null; rol: RolUsuario; accepted_tos_at: string | null; accepted_privacy_at: string | null; consent_ip: string | null; created_at: string }
-        Insert: { id: string; nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario; accepted_tos_at?: string | null; accepted_privacy_at?: string | null; consent_ip?: string | null; created_at?: string }
-        Update: { nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario; accepted_tos_at?: string | null; accepted_privacy_at?: string | null; consent_ip?: string | null }
+        Row: { id: string; nombre: string | null; telefono: string | null; cedula: string | null; rol: RolUsuario; pais: string | null; accepted_tos_at: string | null; accepted_privacy_at: string | null; consent_ip: string | null; created_at: string }
+        Insert: { id: string; nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario; pais?: string | null; accepted_tos_at?: string | null; accepted_privacy_at?: string | null; consent_ip?: string | null; created_at?: string }
+        Update: { nombre?: string | null; telefono?: string | null; cedula?: string | null; rol?: RolUsuario; pais?: string | null; accepted_tos_at?: string | null; accepted_privacy_at?: string | null; consent_ip?: string | null }
         Relationships: []
       }
       direcciones: {

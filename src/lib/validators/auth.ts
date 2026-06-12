@@ -84,6 +84,16 @@ export const registroSchema = z
         'Formato inválido. Esperado: +XX 1234567890 (incluye el código de país)',
       ),
 
+    // País de residencia — ISO 3166-1 alpha-2 ("CO", "VE", "MX", ...)
+    // Opcional para compatibilidad con cuentas creadas antes de este campo.
+    pais: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/, 'País inválido')
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+
     password: z
       .string()
       .min(10,  'La contraseña debe tener al menos 10 caracteres')

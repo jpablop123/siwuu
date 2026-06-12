@@ -28,6 +28,7 @@ export async function registrarse(
     nombre:             formData.get('nombre')?.toString() ?? '',
     email:              formData.get('email')?.toString() ?? '',
     telefono:           formData.get('telefono')?.toString() ?? '',
+    pais:               formData.get('pais')?.toString() ?? '',
     password:           formData.get('password')?.toString() ?? '',
     confirmarPassword:  formData.get('confirmarPassword')?.toString() ?? '',
     aceptaTerminos:     formData.get('aceptaTerminos')?.toString() ?? '',
@@ -43,7 +44,7 @@ export async function registrarse(
     return { fieldErrors }
   }
 
-  const { nombre, email, telefono, password } = parsed.data
+  const { nombre, email, telefono, password, pais } = parsed.data
 
   const supabase = createClient()
   const { data, error } = await supabase.auth.signUp({
@@ -84,6 +85,7 @@ export async function registrarse(
       .from('profiles')
       .update({
         telefono,
+        pais:                pais ?? null,
         accepted_tos_at:     now,
         accepted_privacy_at: now,
         consent_ip:          extractIp(h),

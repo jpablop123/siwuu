@@ -24,6 +24,7 @@ import {
   isValidDigits,
   formatPhone,
   parsePhone,
+  findByIso,
   type CountryPhone,
 } from '@/lib/intl/phones'
 
@@ -42,6 +43,12 @@ interface PhoneInputProps {
   hint?: string
   /** Si true, no se puede editar */
   readOnly?: boolean
+  /**
+   * Si está seteado, el país queda forzado a ese ISO. El chip de bandera+código
+   * se muestra como solo lectura (sin chevron, sin click). Útil cuando el país
+   * ya se eligió en otro campo del form (ej. selector "País" separado en /registro).
+   */
+  lockedCountryIso?: string
 }
 
 export function PhoneInput({
@@ -54,15 +61,38 @@ export function PhoneInput({
   id,
   hint,
   readOnly,
+  lockedCountryIso,
 }: PhoneInputProps) {
-  // Parseamos el value inicial. Si está vacío, default Colombia.
-  const initial = useMemo(() => parsePhone(value), [])  // eslint-disable-line react-hooks/exhaustive-deps
+  // Parseamos el value inicial. Si hay lockedCountryIso, ese gana sobre el parsed.
+  const initial = useMemo(() => {
+    const parsed = parsePhone(value)
+    if (lockedCountryIso) {
+      const locked = findByIso(lockedCountryIso)
+      if (locked) return { country: locked, numero: parsed.numero }
+    }
+    return parsed
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const [country, setCountry] = useState<CountryPhone>(initial.country)
   const [numero, setNumero] = useState<string>(initial.numero)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [touched, setTouched] = useState(false)
+
+  // Si el parent cambia el lockedCountryIso, forzamos el cambio de país acá.
+  // Esto permite que un selector "País" separado en el form controle el
+  // teléfono sin que el usuario tenga que abrir el chip a mano.
+  useEffect(() => {
+    if (!lockedCountryIso) return
+    const locked = findByIso(lockedCountryIso)
+    if (locked && locked.iso !== country.iso) {
+      setCountry(locked)
+      // Si el número tipeado excede el max del nuevo país, recortar
+      const max = maxDigits(locked)
+      if (numero.length > max) setNumero(numero.slice(0, max))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockedCountryIso])
 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const numeroRef = useRef<HTMLInputElement>(null)
@@ -162,29 +192,39 @@ export function PhoneInput({
           readOnly && 'opacity-70',
         )}
       >
-        {/* Trigger país */}
-        <button
-          type="button"
-          onClick={() => !readOnly && setOpen((o) => !o)}
-          disabled={readOnly}
-          className={cn(
-            'flex shrink-0 items-center gap-1.5 rounded-l-[10px] border-r border-zinc-200 px-3 py-2.5 text-sm dark:border-zinc-700',
-            !readOnly && 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
-            readOnly && 'cursor-not-allowed',
-          )}
-          aria-label="Cambiar país"
-          aria-expanded={open}
-          aria-haspopup="listbox"
-        >
-          <span className="text-lg leading-none" aria-hidden="true">{country.flag}</span>
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">+{country.code}</span>
-          {!readOnly && (
-            <ChevronDown
-              className={cn('h-3.5 w-3.5 text-zinc-500 transition-transform', open && 'rotate-180')}
-              aria-hidden="true"
-            />
-          )}
-        </button>
+        {/* Chip de país — interactivo, locked o readOnly */}
+        {(() => {
+          const isLocked = !!lockedCountryIso
+          const isInteractive = !readOnly && !isLocked
+          const ariaLabel = isLocked
+            ? `País seleccionado: ${country.nombre}`
+            : 'Cambiar país'
+          return (
+            <button
+              type="button"
+              onClick={() => isInteractive && setOpen((o) => !o)}
+              disabled={!isInteractive}
+              className={cn(
+                'flex shrink-0 items-center gap-1.5 rounded-l-[10px] border-r border-zinc-200 px-3 py-2.5 text-sm dark:border-zinc-700',
+                isInteractive && 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
+                !isInteractive && 'cursor-default',
+              )}
+              aria-label={ariaLabel}
+              aria-expanded={isInteractive ? open : undefined}
+              aria-haspopup={isInteractive ? 'listbox' : undefined}
+              title={isLocked ? `Definido por el campo País (${country.nombre})` : undefined}
+            >
+              <span className="text-lg leading-none" aria-hidden="true">{country.flag}</span>
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">+{country.code}</span>
+              {isInteractive && (
+                <ChevronDown
+                  className={cn('h-3.5 w-3.5 text-zinc-500 transition-transform', open && 'rotate-180')}
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          )
+        })()}
 
         {/* Input numérico */}
         <input

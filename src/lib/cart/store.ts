@@ -80,6 +80,32 @@ async function vaciarRemotoBulk(userId: string) {
   await supabase.from('carrito_items').delete().eq('user_id', userId)
 }
 
+/**
+ * Consolida items duplicados por (productoId, variante).
+ *
+ * Defensa en profundidad: si por una regresión, race condition o data legacy
+ * en localStorage el carrito acumuló filas repetidas del mismo producto,
+ * al hidratar el store las fusionamos en una sola con la cantidad sumada.
+ *
+ * Esto se aplica:
+ *   - On rehydrate desde localStorage (al cargar la app)
+ *   - En sincronizarAlLogin antes del merge con remoto
+ */
+function dedupeCartItems(items: CartItem[]): CartItem[] {
+  const map = new Map<string, CartItem>()
+  for (const item of items) {
+    const key = `${item.productoId}|${item.variante ?? ''}`
+    const existing = map.get(key)
+    if (existing) {
+      existing.cantidad += item.cantidad
+    } else {
+      // Copia para no mutar el original
+      map.set(key, { ...item })
+    }
+  }
+  return Array.from(map.values())
+}
+
 // ---------------------------------------------------------------------------
 // Store
 // ---------------------------------------------------------------------------
@@ -179,13 +205,16 @@ export const useCartStore = create<CartStore>()(
           }
         }
 
-        set({ items: mergeado })
+        // Defensa: si por algún motivo `mergeado` quedó con duplicados (legacy),
+        // los consolidamos antes de setear y persistir.
+        const final = dedupeCartItems(mergeado)
+        set({ items: final })
 
         // Persistir estado mergeado en Supabase
-        if (mergeado.length > 0) {
+        if (final.length > 0) {
           await supabase
             .from('carrito_items')
-            .upsert(mergeado.map((i) => itemToRow(i, userId)), {
+            .upsert(final.map((i) => itemToRow(i, userId)), {
               onConflict: 'user_id,producto_id,variante',
             })
         }
@@ -198,6 +227,19 @@ export const useCartStore = create<CartStore>()(
       storage: createJSONStorage(() => localStorage),
       // userId no se persiste — se inyecta desde AuthCartSync en cada sesión
       partialize: (state) => ({ items: state.items }),
+      // Al hidratar desde localStorage: consolidar duplicados (defensa contra
+      // bugs viejos que pudieron dejar el storage con 1000+ filas del mismo
+      // producto). Si después de consolidar quedan menos items, también
+      // disparamos un bulk delete remoto para limpiar la cola del usuario.
+      onRehydrateStorage: () => (state) => {
+        if (!state || !state.items?.length) return
+        const before = state.items.length
+        state.items = dedupeCartItems(state.items)
+        if (state.items.length < before) {
+          // eslint-disable-next-line no-console
+          console.info(`[cart] dedup: ${before} → ${state.items.length} items`)
+        }
+      },
     }
   )
 )

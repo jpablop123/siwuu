@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 
+// El admin siempre se renderiza en runtime (datos en vivo, detrás de auth).
+// Evita que el build intente prerenderizar y llamar a la BD sin env.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: {
     default: 'Admin — SiwuuShop',

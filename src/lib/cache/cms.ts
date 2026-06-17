@@ -37,13 +37,18 @@ import type { HeroBannerSlide } from '@/components/store/HeroBanner'
 
 export const getCategoriasActivas = unstable_cache(
   async (): Promise<Categoria[]> => {
-    const supabase = createServiceClient()
-    const { data } = await supabase
-      .from('categorias')
-      .select('*')
-      .eq('activa', true)
-      .order('orden')
-    return (data as Categoria[]) ?? []
+    try {
+      const supabase = createServiceClient()
+      const { data } = await supabase
+        .from('categorias')
+        .select('*')
+        .eq('activa', true)
+        .order('orden')
+      return (data as Categoria[]) ?? []
+    } catch {
+      // Sin env (ej. build): devolver vacío en vez de romper el prerender
+      return []
+    }
   },
   ['categorias-activas'],
   { revalidate: 300, tags: ['categorias'] },  // 5 min + invalidación por tag
@@ -53,14 +58,18 @@ export const getCategoriasActivas = unstable_cache(
 
 export const getBannersActivos = unstable_cache(
   async (): Promise<HeroBannerSlide[]> => {
-    const supabase = createServiceClient()
-    const { data } = await supabase
-      .from('tienda_banners')
-      .select('id, titulo, subtitulo, tag, imagen_url, cta_label, cta_href, cta_secundario_label, cta_secundario_href, align')
-      .eq('activo', true)
-      .order('orden')
-      .order('created_at')
-    return (data as HeroBannerSlide[]) ?? []
+    try {
+      const supabase = createServiceClient()
+      const { data } = await supabase
+        .from('tienda_banners')
+        .select('id, titulo, subtitulo, tag, imagen_url, cta_label, cta_href, cta_secundario_label, cta_secundario_href, align')
+        .eq('activo', true)
+        .order('orden')
+        .order('created_at')
+      return (data as HeroBannerSlide[]) ?? []
+    } catch {
+      return []
+    }
   },
   ['banners-activos'],
   { revalidate: 300, tags: ['banners'] },
@@ -94,9 +103,13 @@ interface TiendaConfig {
 
 export const getTiendaConfig = unstable_cache(
   async (): Promise<TiendaConfig | null> => {
-    const supabase = createServiceClient()
-    const { data } = await supabase.from('tienda_configuracion').select('*').single()
-    return (data as TiendaConfig) ?? null
+    try {
+      const supabase = createServiceClient()
+      const { data } = await supabase.from('tienda_configuracion').select('*').single()
+      return (data as TiendaConfig) ?? null
+    } catch {
+      return null
+    }
   },
   ['tienda-config'],
   { revalidate: 300, tags: ['tienda-config'] },

@@ -20,26 +20,34 @@ export const revalidate = 3600 // 1 hora
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://siwuu.vercel.app'
-  const supabase = createServiceClient()
 
-  const [productosRes, categoriasRes] = await Promise.all([
-    supabase.from('productos').select('slug, updated_at').eq('activo', true),
-    supabase.from('categorias').select('slug').eq('activa', true),
-  ])
+  let productos: MetadataRoute.Sitemap = []
+  let categorias: MetadataRoute.Sitemap = []
 
-  const productos = (productosRes.data ?? []).map((p) => ({
-    url: `${baseUrl}/productos/${p.slug}`,
-    lastModified: new Date(p.updated_at),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }))
+  try {
+    const supabase = createServiceClient()
+    const [productosRes, categoriasRes] = await Promise.all([
+      supabase.from('productos').select('slug, updated_at').eq('activo', true),
+      supabase.from('categorias').select('slug').eq('activa', true),
+    ])
 
-  const categorias = (categoriasRes.data ?? []).map((c) => ({
-    url: `${baseUrl}/categoria/${c.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }))
+    productos = (productosRes.data ?? []).map((p) => ({
+      url: `${baseUrl}/productos/${p.slug}`,
+      lastModified: new Date(p.updated_at),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    }))
+
+    categorias = (categoriasRes.data ?? []).map((c) => ({
+      url: `${baseUrl}/categoria/${c.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }))
+  } catch {
+    // Sin env (ej. build): devolvemos solo las rutas estáticas; el ISR
+    // (revalidate 1h) repuebla productos/categorías en runtime.
+  }
 
   const rutasEstaticas: MetadataRoute.Sitemap = [
     { url: baseUrl,                        priority: 1.0, changeFrequency: 'daily',   lastModified: new Date() },

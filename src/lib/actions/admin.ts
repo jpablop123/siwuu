@@ -568,6 +568,27 @@ export async function eliminarVariante(
   return { ok: true }
 }
 
+/** Actualiza el recargo (precio_adicional) y/o disponibilidad de una variante existente. */
+export async function actualizarVariante(
+  id: string,
+  productoId: string,
+  precioAdicional: number,
+  disponible?: boolean
+): Promise<{ ok?: boolean; error?: string }> {
+  const { supabase } = await verificarAdmin()
+
+  const patch: { precio_adicional: number; disponible?: boolean } = {
+    precio_adicional: Number.isFinite(precioAdicional) ? precioAdicional : 0,
+  }
+  if (disponible !== undefined) patch.disponible = disponible
+
+  const { error } = await supabase.from('variantes').update(patch).eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/admin/productos/${productoId}`)
+  return { ok: true }
+}
+
 // ---------------------------------------------------------------------------
 // Categorías
 // ---------------------------------------------------------------------------
@@ -848,6 +869,20 @@ export interface ConfiguracionTiendaInput {
   promo_cta_label: string
   promo_cta_href: string
   promo_imagen?: string | null
+  // Barra "Por qué elegirnos" (4 features)
+  feature_1_titulo?: string | null
+  feature_1_desc?: string | null
+  feature_2_titulo?: string | null
+  feature_2_desc?: string | null
+  feature_3_titulo?: string | null
+  feature_3_desc?: string | null
+  feature_4_titulo?: string | null
+  feature_4_desc?: string | null
+  // Footer
+  footer_descripcion?: string | null
+  footer_whatsapp?: string | null
+  footer_email?: string | null
+  footer_ubicacion?: string | null
 }
 
 export async function actualizarConfiguracionTienda(
@@ -866,6 +901,18 @@ export async function actualizarConfiguracionTienda(
       promo_cta_label:   data.promo_cta_label.trim()    || 'Comprar ahora',
       promo_cta_href:    data.promo_cta_href.trim()     || '/productos',
       promo_imagen:      data.promo_imagen?.trim()      || null,
+      feature_1_titulo:  data.feature_1_titulo?.trim()  || null,
+      feature_1_desc:    data.feature_1_desc?.trim()    || null,
+      feature_2_titulo:  data.feature_2_titulo?.trim()  || null,
+      feature_2_desc:    data.feature_2_desc?.trim()    || null,
+      feature_3_titulo:  data.feature_3_titulo?.trim()  || null,
+      feature_3_desc:    data.feature_3_desc?.trim()    || null,
+      feature_4_titulo:  data.feature_4_titulo?.trim()  || null,
+      feature_4_desc:    data.feature_4_desc?.trim()    || null,
+      footer_descripcion: data.footer_descripcion?.trim() || null,
+      footer_whatsapp:   data.footer_whatsapp?.trim()   || null,
+      footer_email:      data.footer_email?.trim()      || null,
+      footer_ubicacion:  data.footer_ubicacion?.trim()  || null,
       updated_at:        new Date().toISOString(),
     })
 

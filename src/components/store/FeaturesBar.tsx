@@ -1,37 +1,34 @@
-import { Truck, ShieldCheck, MessageCircle, RefreshCw } from 'lucide-react'
+import { Home, Plane, ShieldCheck, MessageCircle } from 'lucide-react'
 
-const FEATURES = [
-  {
-    Icon: Truck,
-    titulo: 'Envíos a toda Colombia',
-    desc: 'Entrega rápida en 2-5 días hábiles a cualquier ciudad.',
-    color: 'text-emerald-500',
+/** Config editable desde el admin (tienda_configuracion). Todo opcional → defaults. */
+export interface FeaturesConfig {
+  feature_1_titulo?: string | null
+  feature_1_desc?: string | null
+  feature_2_titulo?: string | null
+  feature_2_desc?: string | null
+  feature_3_titulo?: string | null
+  feature_3_desc?: string | null
+  feature_4_titulo?: string | null
+  feature_4_desc?: string | null
+}
+
+const ICONS = [Home, Plane, ShieldCheck, MessageCircle]
+const DEFAULTS = [
+  { titulo: 'Entrega en la puerta de tu casa', desc: 'Te lo llevamos a domicilio en cualquier ciudad de Colombia.' },
+  { titulo: 'Directo desde USA', desc: 'Tu personal shopper compra en Estados Unidos y lo trae por ti.' },
+  { titulo: 'Pago 100% protegido', desc: 'Procesamos con Wompi — la plataforma más segura de Colombia.' },
+  { titulo: 'Soporte local', desc: 'Atención en español, respuesta en menos de 24 h.' },
+]
+
+export function FeaturesBar({ config }: { config?: FeaturesConfig | null }) {
+  const FEATURES = DEFAULTS.map((d, i) => ({
+    Icon: ICONS[i],
+    titulo: (config?.[`feature_${i + 1}_titulo` as keyof FeaturesConfig] as string) || d.titulo,
+    desc: (config?.[`feature_${i + 1}_desc` as keyof FeaturesConfig] as string) || d.desc,
+    color: 'text-emerald-600 dark:text-emerald-400',
     bg: 'bg-emerald-500/10',
-  },
-  {
-    Icon: ShieldCheck,
-    titulo: 'Pago 100% protegido',
-    desc: 'Procesamos con Wompi — la plataforma más segura de Colombia.',
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-  },
-  {
-    Icon: RefreshCw,
-    titulo: 'Garantía incluida',
-    desc: 'Todos nuestros productos vienen con garantía de fábrica.',
-    color: 'text-violet-500',
-    bg: 'bg-violet-500/10',
-  },
-  {
-    Icon: MessageCircle,
-    titulo: 'Soporte local',
-    desc: 'Atención en español, respuesta en menos de 24 h.',
-    color: 'text-amber-500',
-    bg: 'bg-amber-500/10',
-  },
-] as const
+  }))
 
-export function FeaturesBar() {
   return (
     <section
       className="border-y border-zinc-200 bg-white py-10 dark:border-zinc-800 dark:bg-zinc-950 sm:py-14"
@@ -39,7 +36,7 @@ export function FeaturesBar() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Encabezado centrado — solo desktop */}
-        <p className="mb-8 hidden text-center font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 lg:block">
+        <p className="mb-8 hidden text-center text-xs font-semibold uppercase tracking-wider text-zinc-400 lg:block">
           Por qué elegirnos
         </p>
 

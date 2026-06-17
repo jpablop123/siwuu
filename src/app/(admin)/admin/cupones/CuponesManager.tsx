@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, UserPlus, UserCheck, Calendar, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCOP } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
@@ -315,7 +315,7 @@ function CuponEditor({
           />
 
           <Input
-            label="Compra mínima (opcional)"
+            label="Compra mínima para aplicar (opcional)"
             name="minimo_compra"
             type="number"
             min="0"
@@ -323,11 +323,11 @@ function CuponEditor({
             defaultValue={initial?.minimo_compra ?? ''}
             placeholder="50000"
             error={fieldErrors.minimo_compra}
-            hint={!fieldErrors.minimo_compra ? 'Subtotal mínimo para aplicar el cupón' : undefined}
+            hint={!fieldErrors.minimo_compra ? 'El carrito debe sumar al menos este valor. Ej: $50.000. Vacío = sin mínimo.' : undefined}
           />
 
           <Input
-            label="Usos máximos (opcional)"
+            label="Usos máximos en total (opcional)"
             name="usos_maximos"
             type="number"
             min="1"
@@ -335,29 +335,11 @@ function CuponEditor({
             defaultValue={initial?.usos_maximos ?? ''}
             placeholder="100"
             error={fieldErrors.usos_maximos}
-            hint={!fieldErrors.usos_maximos ? 'Dejá vacío para usos ilimitados' : undefined}
+            hint={!fieldErrors.usos_maximos ? 'Cuántas veces se puede canjear en toda la tienda. Vacío = ilimitado.' : undefined}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Inicia (opcional)"
-              name="inicia_en"
-              type="datetime-local"
-              defaultValue={initialInicia}
-              error={fieldErrors.inicia_en}
-              hint={!fieldErrors.inicia_en ? 'Activación programada' : undefined}
-            />
-            <Input
-              label="Expira (opcional)"
-              name="expira_en"
-              type="datetime-local"
-              defaultValue={initialExpira}
-              error={fieldErrors.expira_en}
-            />
-          </div>
-
           <Input
-            label="Descuento máximo (opcional)"
+            label="Tope de descuento (opcional)"
             name="descuento_maximo"
             type="number"
             min="0"
@@ -365,12 +347,38 @@ function CuponEditor({
             defaultValue={initial?.descuento_maximo ?? ''}
             placeholder="50000"
             error={fieldErrors.descuento_maximo}
-            hint={!fieldErrors.descuento_maximo ? 'Cap al monto descontado (útil para % grandes)' : undefined}
+            hint={!fieldErrors.descuento_maximo ? 'Lo máximo que se descuenta, aunque el % dé más. Ej: 30% pero máx $50.000.' : undefined}
           />
 
+          {/* Vigencia */}
+          <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900/50">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Vigencia (opcional)</p>
+            </div>
+            <p className="text-xs text-zinc-500">Define desde y hasta cuándo funciona. Si las dejas vacías, sirve de inmediato y sin vencimiento.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Empieza"
+                name="inicia_en"
+                type="datetime-local"
+                defaultValue={initialInicia}
+                error={fieldErrors.inicia_en}
+              />
+              <Input
+                label="Vence"
+                name="expira_en"
+                type="datetime-local"
+                defaultValue={initialExpira}
+                error={fieldErrors.expira_en}
+              />
+            </div>
+          </div>
+
           <div>
-            <label htmlFor="categoria-select" className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Solo para una categoría (opcional)
+            <label htmlFor="categoria-select" className="mb-1.5 flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <Tag className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              Aplica solo a una categoría (opcional)
             </label>
             <select
               id="categoria-select"
@@ -383,13 +391,23 @@ function CuponEditor({
                 <option key={c.id} value={c.id}>{c.nombre}</option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              El cupón solo aplica si el carrito tiene productos de esa categoría. &quot;Cualquier categoría&quot; = sin restricción.
+            </p>
             {fieldErrors.categoria_id && (
               <p className="mt-1 text-xs text-red-700 dark:text-red-400" role="alert">{fieldErrors.categoria_id}</p>
             )}
           </div>
 
-          <div className="space-y-2.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/50">
-            <label className="flex items-start gap-2.5 text-sm text-zinc-800 dark:text-zinc-200">
+          <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900/50">
+            <div>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">¿Quién puede usar este cupón?</p>
+              <p className="text-xs text-zinc-500">
+                Si no marcas nada, lo puede usar cualquier cliente, las veces que quiera.
+              </p>
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 bg-white p-3 transition-colors hover:border-emerald-500/40 dark:border-zinc-700 dark:bg-zinc-900">
               <input
                 type="checkbox"
                 name="solo_primera_compra"
@@ -397,13 +415,16 @@ function CuponEditor({
                 defaultChecked={initial?.solo_primera_compra ?? false}
                 className="mt-0.5 h-4 w-4 rounded border-zinc-400 bg-white text-emerald-600 accent-emerald-600 dark:border-zinc-600 dark:bg-zinc-800"
               />
-              <span>
-                Solo primera compra
-                <span className="block text-xs text-zinc-500">El cliente no debe tener pedidos pagados previos</span>
+              <UserPlus className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <span className="text-sm">
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">Solo clientes nuevos</span>
+                <span className="block text-xs text-zinc-500">
+                  Únicamente quien nunca ha tenido un pedido pagado. Ideal para dar la bienvenida.
+                </span>
               </span>
             </label>
 
-            <label className="flex items-start gap-2.5 text-sm text-zinc-800 dark:text-zinc-200">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 bg-white p-3 transition-colors hover:border-emerald-500/40 dark:border-zinc-700 dark:bg-zinc-900">
               <input
                 type="checkbox"
                 name="un_uso_por_cliente"
@@ -411,9 +432,12 @@ function CuponEditor({
                 defaultChecked={initial?.un_uso_por_cliente ?? false}
                 className="mt-0.5 h-4 w-4 rounded border-zinc-400 bg-white text-emerald-600 accent-emerald-600 dark:border-zinc-600 dark:bg-zinc-800"
               />
-              <span>
-                Un uso por cliente
-                <span className="block text-xs text-zinc-500">Cada email/usuario solo puede usarlo una vez</span>
+              <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <span className="text-sm">
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">Una sola vez por cliente</span>
+                <span className="block text-xs text-zinc-500">
+                  Cada cliente (por email o cuenta) puede usarlo una única vez. Evita que se repita.
+                </span>
               </span>
             </label>
           </div>

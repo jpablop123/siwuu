@@ -177,9 +177,11 @@ export default async function ProductoPage({ params }: Props) {
       </nav>
 
       {/* Layout dos columnas */}
-      <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
-        {/* Izquierda: Galería */}
-        <ProductGallery imagenes={p.imagenes} nombre={p.nombre} />
+      <div className="grid items-start gap-8 md:grid-cols-2 lg:gap-12">
+        {/* Izquierda: Galería (sticky en desktop para que el producto siempre se vea) */}
+        <div className="md:sticky md:top-24">
+          <ProductGallery imagenes={p.imagenes} nombre={p.nombre} />
+        </div>
 
         {/* Derecha: Info */}
         <div>
@@ -239,9 +241,9 @@ export default async function ProductoPage({ params }: Props) {
           {/* Trust signals */}
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
-              { icon: Truck, text: 'Envio nacional' },
+              { icon: Truck, text: 'Entrega a domicilio' },
               { icon: ShieldCheck, text: 'Pago seguro' },
-              { icon: RotateCcw, text: 'Garantia' },
+              { icon: RotateCcw, text: 'Garantía' },
             ].map(({ icon: Icon, text }) => (
               <div
                 key={text}
@@ -259,7 +261,7 @@ export default async function ProductoPage({ params }: Props) {
               <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                 Descripcion
               </h2>
-              <div className="prose prose-sm max-w-none prose-headings:text-zinc-900 dark:prose-headings:text-zinc-100 prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-a:text-emerald-400 text-zinc-700 dark:text-zinc-300">
+              <div className="max-w-none whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
                 {p.descripcion}
               </div>
             </div>

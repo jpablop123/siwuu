@@ -82,15 +82,15 @@ export default async function HomePage() {
       {destacados.length > 0 && (
         <ProductCarousel
           productos={destacados}
-          titulo="Los más vendidos"
-          subtitulo="Favoritos de la tienda"
+          titulo="Destacados"
+          subtitulo="Selección de la tienda"
           verTodosHref="/productos"
-          accentColor="violet"
+          accentColor="emerald"
         />
       )}
 
       {/* 6. Trust signals */}
-      <FeaturesBar />
+      <FeaturesBar config={config} />
     </>
   )
 }

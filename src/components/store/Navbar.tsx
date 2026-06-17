@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { UserDropdown } from './UserDropdown'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { CurrencyToggle } from './CurrencyToggle'
+import { Logo } from './Logo'
 
 const NAV_LINKS = [
   { href: '/productos', label: 'Productos' },
@@ -62,20 +63,10 @@ export function Navbar({ user }: { user?: UserProfile | null }) {
           : 'border-b border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-950'
       )}
     >
-      {/* Barra promo */}
-      <div className="bg-emerald-500 px-4 py-1.5 text-center font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 sm:text-sm">
-        Envio GRATIS en pedidos mayores a $150.000 COP
-      </div>
-
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+<div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-emerald-500/30 bg-emerald-500/10 font-mono text-sm font-black text-emerald-400">
-            S
-          </div>
-          <span className="font-heading text-xl font-extrabold text-zinc-900 dark:text-zinc-100">
-            Siwu<span className="text-emerald-400">u</span>
-          </span>
+        <Link href="/" className="flex shrink-0 items-center" aria-label="Siwuu — Inicio">
+          <Logo className="h-8 w-auto" />
         </Link>
 
         {/* Nav desktop */}
@@ -87,11 +78,11 @@ export function Navbar({ user }: { user?: UserProfile | null }) {
                 key={href}
                 href={href}
                 className={cn(
-                  'relative px-3 py-2 font-mono text-sm font-medium uppercase tracking-wider transition-colors duration-150',
+                  'relative px-3 py-2 text-sm font-medium transition-colors duration-150',
                   isActive
-                    ? 'text-emerald-400'
-                    : 'text-zinc-600 hover:text-emerald-400 dark:text-zinc-400',
-                  'after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-emerald-400 after:transition-all after:duration-200',
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-zinc-600 hover:text-emerald-600 dark:text-zinc-300 dark:hover:text-emerald-400',
+                  'after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-emerald-500 after:transition-all after:duration-200',
                   isActive ? 'after:w-full' : 'after:w-0 hover:after:w-full'
                 )}
                 aria-current={isActive ? 'page' : undefined}
@@ -113,7 +104,7 @@ export function Navbar({ user }: { user?: UserProfile | null }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar..."
-                className="w-44 rounded-xl border-2 border-zinc-200 bg-zinc-50 py-2 pl-9 pr-4 font-mono text-sm text-zinc-900 transition-all placeholder:text-zinc-400 focus:w-60 focus:border-emerald-500/50 focus:bg-zinc-50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 lg:w-52 lg:focus:w-64 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:bg-zinc-900"
+                className="w-44 rounded-xl border border-zinc-200 bg-zinc-100 py-2 pl-9 pr-4 text-sm text-zinc-900 transition-all placeholder:text-zinc-400 focus:w-60 focus:border-emerald-500/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500/20 lg:w-52 lg:focus:w-64 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:bg-zinc-900"
                 aria-label="Buscar productos"
               />
             </div>
@@ -127,15 +118,15 @@ export function Navbar({ user }: { user?: UserProfile | null }) {
               <div className="hidden items-center gap-2 sm:flex">
                 <Link
                   href="/login"
-                  className="rounded-xl px-3 py-2 font-mono text-xs font-medium uppercase tracking-wider text-zinc-600 transition-colors hover:text-emerald-400 dark:text-zinc-400"
+                  className="rounded-xl px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:text-emerald-600 dark:text-zinc-300 dark:hover:text-emerald-400"
                 >
-                  Login
+                  Ingresar
                 </Link>
                 <Link
                   href="/registro"
-                  className="rounded-xl bg-emerald-500 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 transition-all hover:bg-emerald-400"
+                  className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition-colors hover:bg-emerald-600 hover:text-white"
                 >
-                  Registro
+                  Registrarme
                 </Link>
               </div>
               <Link
@@ -199,7 +190,7 @@ export function Navbar({ user }: { user?: UserProfile | null }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar productos..."
-                className="w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 py-2.5 pl-9 pr-4 font-mono text-sm text-zinc-900 focus:border-emerald-500/50 focus:bg-zinc-50 focus:outline-none focus:ring-1 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:bg-zinc-900"
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 pl-9 pr-4 text-sm text-zinc-900 focus:border-emerald-500/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:bg-zinc-900"
                 aria-label="Buscar productos"
               />
             </div>
@@ -213,10 +204,10 @@ export function Navbar({ user }: { user?: UserProfile | null }) {
                   key={href}
                   href={href}
                   className={cn(
-                    'rounded-xl px-4 py-3 font-mono text-sm font-medium uppercase tracking-wider transition-colors',
+                    'rounded-xl px-4 py-3 text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-900'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
@@ -231,13 +222,13 @@ export function Navbar({ user }: { user?: UserProfile | null }) {
                 <div className="my-2 border-t border-zinc-200 dark:border-zinc-700" />
                 <Link
                   href="/login"
-                  className="rounded-xl px-4 py-3 font-mono text-sm font-medium uppercase tracking-wider text-zinc-600 transition-colors hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                  className="rounded-xl px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
                 >
                   Iniciar sesión
                 </Link>
                 <Link
                   href="/registro"
-                  className="rounded-xl px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-emerald-400 transition-colors hover:bg-emerald-500/10"
+                  className="rounded-xl px-4 py-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/10 dark:text-emerald-400"
                 >
                   Crear cuenta
                 </Link>

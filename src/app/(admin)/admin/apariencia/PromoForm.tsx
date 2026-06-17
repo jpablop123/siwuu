@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/Button'
 import { actualizarConfiguracionTienda, type ConfiguracionTiendaInput } from '@/lib/actions/admin'
 import { Check } from 'lucide-react'
 
+const FEATURE_FIELDS: Array<[keyof ConfiguracionTiendaInput, keyof ConfiguracionTiendaInput, string]> = [
+  ['feature_1_titulo', 'feature_1_desc', '1'],
+  ['feature_2_titulo', 'feature_2_desc', '2'],
+  ['feature_3_titulo', 'feature_3_desc', '3'],
+  ['feature_4_titulo', 'feature_4_desc', '4'],
+]
+
 interface PromoFormProps {
   config: ConfiguracionTiendaInput & { promo_imagen?: string | null }
 }
@@ -25,6 +32,18 @@ export function PromoForm({ config }: PromoFormProps) {
     promo_cta_label: config.promo_cta_label ?? 'Comprar ahora',
     promo_cta_href: config.promo_cta_href ?? '/productos',
     promo_imagen: config.promo_imagen ?? null,
+    feature_1_titulo: config.feature_1_titulo ?? 'Entrega en la puerta de tu casa',
+    feature_1_desc: config.feature_1_desc ?? 'Te lo llevamos a domicilio en cualquier ciudad de Colombia.',
+    feature_2_titulo: config.feature_2_titulo ?? 'Directo desde USA',
+    feature_2_desc: config.feature_2_desc ?? 'Tu personal shopper compra en Estados Unidos y lo trae por ti.',
+    feature_3_titulo: config.feature_3_titulo ?? 'Pago 100% protegido',
+    feature_3_desc: config.feature_3_desc ?? 'Procesamos con Wompi — la plataforma más segura de Colombia.',
+    feature_4_titulo: config.feature_4_titulo ?? 'Soporte local',
+    feature_4_desc: config.feature_4_desc ?? 'Atención en español, respuesta en menos de 24 h.',
+    footer_descripcion: config.footer_descripcion ?? '',
+    footer_whatsapp: config.footer_whatsapp ?? '573001234567',
+    footer_email: config.footer_email ?? 'info@siwuushop.co',
+    footer_ubicacion: config.footer_ubicacion ?? 'Bogotá, Colombia',
   })
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
@@ -104,6 +123,64 @@ export function PromoForm({ config }: PromoFormProps) {
           onChange={(e) => set('promo_cta_href', e.target.value)}
           placeholder="/productos/..."
         />
+      </div>
+
+      {/* ── Barra "Por qué elegirnos" ─────────────────────────────── */}
+      <div className="border-t border-zinc-200 pt-5 dark:border-zinc-700">
+        <p className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Barra &quot;Por qué elegirnos&quot; (4 bloques de la home)
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {FEATURE_FIELDS.map(([tKey, dKey, n]) => (
+            <div key={n} className="space-y-2 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
+              <Input
+                label={`Bloque ${n} — título`}
+                value={(form[tKey] as string) ?? ''}
+                onChange={(e) => set(tKey, e.target.value)}
+              />
+              <Input
+                label={`Bloque ${n} — descripción`}
+                value={(form[dKey] as string) ?? ''}
+                onChange={(e) => set(dKey, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Footer ────────────────────────────────────────────────── */}
+      <div className="border-t border-zinc-200 pt-5 dark:border-zinc-700">
+        <p className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Footer</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Descripción
+            </label>
+            <textarea
+              value={form.footer_descripcion ?? ''}
+              onChange={(e) => set('footer_descripcion', e.target.value)}
+              rows={2}
+              className="w-full rounded-xl border-2 border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500/50 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+          </div>
+          <Input
+            label="WhatsApp (solo números)"
+            value={form.footer_whatsapp ?? ''}
+            onChange={(e) => set('footer_whatsapp', e.target.value)}
+            placeholder="573001234567"
+          />
+          <Input
+            label="Email de contacto"
+            value={form.footer_email ?? ''}
+            onChange={(e) => set('footer_email', e.target.value)}
+          />
+          <Input
+            label="Ubicación"
+            value={form.footer_ubicacion ?? ''}
+            onChange={(e) => set('footer_ubicacion', e.target.value)}
+            className="sm:col-span-2"
+          />
+        </div>
       </div>
 
       {error && (

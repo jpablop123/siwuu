@@ -2,14 +2,15 @@ import type { Metadata } from 'next'
 import { Navbar } from '@/components/store/Navbar'
 import { Footer } from '@/components/store/Footer'
 import { createClient } from '@/lib/supabase/server'
+import { getTiendaConfig } from '@/lib/cache/cms'
 
 export const metadata: Metadata = {
   title: {
-    default: 'SiwuuShop — Tu tienda online en Colombia',
+    default: 'SiwuuShop — Tienda online y personal shopper en USA',
     template: '%s | SiwuuShop',
   },
   description:
-    'Los mejores productos con envío a toda Colombia a los mejores precios.',
+    'Siwuu (Ship It With Us): compra en nuestra tienda online o pídenos lo que quieras desde Estados Unidos con nuestro servicio de personal shopper. Te lo llevamos a Colombia.',
   openGraph: {
     type: 'website',
     locale: 'es_CO',
@@ -56,13 +57,13 @@ async function getUserFromSession() {
 }
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const user = await getUserFromSession()
+  const [user, config] = await Promise.all([getUserFromSession(), getTiendaConfig()])
 
   return (
     <>
       <Navbar user={user} />
       <main className="min-h-[calc(100dvh-4rem)]">{children}</main>
-      <Footer />
+      <Footer config={config} />
     </>
   )
 }

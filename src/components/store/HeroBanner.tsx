@@ -50,11 +50,11 @@ interface HeroBannerProps {
 const FALLBACK_SLIDES: HeroBannerSlide[] = [
   {
     id: 'fallback-1',
-    tag: 'Nuevos lanzamientos',
-    titulo: 'Tecnología\nque te sigue',
-    subtitulo: 'Auriculares, relojes inteligentes y accesorios premium con envío directo a tu puerta.',
+    tag: 'Personal shopper · USA → Colombia',
+    titulo: 'Lo que quieras,\ndesde USA',
+    subtitulo: 'Compra en Estados Unidos y te lo entregamos en la puerta de tu casa, en toda Colombia.',
     imagen_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1400&auto=format&fit=crop',
-    cta_label: 'Ver todo',
+    cta_label: 'Ver catálogo',
     cta_href: '/productos',
     cta_secundario_label: 'Categorías',
     cta_secundario_href: '/#categorias',
@@ -62,11 +62,11 @@ const FALLBACK_SLIDES: HeroBannerSlide[] = [
   },
   {
     id: 'fallback-2',
-    tag: 'Colección Relojes',
-    titulo: 'Estilo en\ncada segundo',
-    subtitulo: 'Smartwatches y relojes analógicos para quienes no comprometen el diseño.',
+    tag: 'Tecnología premium',
+    titulo: 'Diseño en\ncada detalle',
+    subtitulo: 'Los últimos lanzamientos de Apple, Samsung y más, al precio del día.',
     imagen_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1400&auto=format&fit=crop',
-    cta_label: 'Explorar colección',
+    cta_label: 'Explorar',
     cta_href: '/productos',
     cta_secundario_label: null,
     cta_secundario_href: null,
@@ -74,9 +74,9 @@ const FALLBACK_SLIDES: HeroBannerSlide[] = [
   },
   {
     id: 'fallback-3',
-    tag: 'Setup & Productividad',
-    titulo: 'Tu espacio,\ntu flow',
-    subtitulo: 'Accesorios, periféricos y gadgets que elevan tu workspace al siguiente nivel.',
+    tag: 'Setup & productividad',
+    titulo: 'Arma tu\nespacio ideal',
+    subtitulo: 'Computadores y accesorios que elevan tu día a día al siguiente nivel.',
     imagen_url: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?q=80&w=1400&auto=format&fit=crop',
     cta_label: 'Descubrir',
     cta_href: '/productos',
@@ -89,8 +89,8 @@ const FALLBACK_SLIDES: HeroBannerSlide[] = [
 // ── Gradiente de overlay según align ─────────────────────────────────────────
 
 const OVERLAY: Record<'left' | 'center', string> = {
-  left:   'bg-gradient-to-r from-black/85 via-black/50 to-transparent',
-  center: 'bg-gradient-to-t from-black/90 via-black/50 to-black/20',
+  left:   'bg-gradient-to-r from-black/90 via-black/60 to-black/10',
+  center: 'bg-gradient-to-t from-black/90 via-black/55 to-black/25',
 }
 
 // ── Componente ─────────────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ export function HeroBanner({ slides: dbSlides }: HeroBannerProps) {
               <div className={cn('max-w-lg', isCenter && 'max-w-2xl')}>
                 {/* Tag */}
                 {s.tag && (
-                  <span className="inline-block rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-emerald-300 backdrop-blur-sm">
+                  <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/15 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-200 backdrop-blur-sm">
                     {s.tag}
                   </span>
                 )}
@@ -177,7 +177,7 @@ export function HeroBanner({ slides: dbSlides }: HeroBannerProps) {
                 {/* Título */}
                 <h2
                   className={cn(
-                    'mt-4 font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-white drop-shadow-lg sm:text-5xl lg:text-6xl xl:text-7xl',
+                    'mt-5 font-heading text-4xl font-extrabold leading-[1.05] tracking-tight text-white text-balance drop-shadow-xl sm:text-5xl lg:text-6xl xl:text-7xl',
                   )}
                 >
                   {s.titulo.split('\n').map((line, li) => (
@@ -203,7 +203,7 @@ export function HeroBanner({ slides: dbSlides }: HeroBannerProps) {
                 >
                   <Link
                     href={s.cta_href}
-                    className="group inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-7 py-3.5 font-mono text-sm font-bold uppercase tracking-wider text-zinc-950 shadow-lg transition-all hover:bg-emerald-400 hover:shadow-emerald-500/30 hover:shadow-xl active:scale-95"
+                    className="group inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-7 py-3.5 text-sm font-semibold text-zinc-950 shadow-lg transition-all hover:bg-emerald-400 hover:shadow-xl hover:shadow-emerald-500/30 active:scale-95"
                   >
                     {s.cta_label}
                     <ArrowRight
@@ -214,7 +214,7 @@ export function HeroBanner({ slides: dbSlides }: HeroBannerProps) {
                   {s.cta_secundario_label && s.cta_secundario_href && (
                     <Link
                       href={s.cta_secundario_href}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/20 px-7 py-3.5 font-mono text-sm font-bold uppercase tracking-wider text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/10"
                     >
                       {s.cta_secundario_label}
                     </Link>

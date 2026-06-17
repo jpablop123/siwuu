@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: '%s | SiwuuShop',
   },
   description:
-    'Los mejores productos con envío a toda Colombia a los mejores precios.',
+    'Siwuu (Ship It With Us): compra en nuestra tienda online o pídenos lo que quieras desde Estados Unidos con nuestro servicio de personal shopper. Te lo llevamos a Colombia.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
 }
 

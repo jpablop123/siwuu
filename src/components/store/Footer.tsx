@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Mail, Phone, MapPin, Globe, MessageCircle } from 'lucide-react'
+import { Logo } from './Logo'
 
 const TIENDA_LINKS = [
   { label: 'Todos los productos', href: '/productos' },
@@ -16,31 +17,41 @@ const CUENTA_LINKS = [
 
 const METODOS_PAGO = ['Visa', 'Mastercard', 'PSE', 'Nequi', 'Bancolombia'] as const
 
-export function Footer() {
+/** Datos del footer editables desde el admin (tienda_configuracion). */
+export interface FooterConfig {
+  footer_descripcion?: string | null
+  footer_whatsapp?: string | null
+  footer_email?: string | null
+  footer_ubicacion?: string | null
+}
+
+export function Footer({ config }: { config?: FooterConfig | null }) {
+  const whatsapp = config?.footer_whatsapp || '573001234567'
+  const email = config?.footer_email || 'info@siwuushop.co'
+  const ubicacion = config?.footer_ubicacion || 'Bogotá, Colombia'
+  const descripcion =
+    config?.footer_descripcion ||
+    'Tu tienda online y personal shopper en USA. Compra lo que quieras desde Estados Unidos y te lo entregamos en la puerta de tu casa, en toda Colombia.'
+
   return (
     <footer className="border-t border-zinc-200 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400" role="contentinfo">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border-2 border-emerald-500/30 bg-emerald-500/10 font-mono text-sm font-black text-emerald-400">
-                S
-              </div>
-              <span className="font-heading text-lg font-extrabold text-zinc-900 dark:text-white">
-                Siwu<span className="text-emerald-400">u</span>Shop
-              </span>
+            <div className="flex items-center">
+              <Logo className="h-8 w-auto" />
             </div>
             <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-emerald-400/70">
-              Shop it with us
+              Ship it with us
             </p>
             <p className="mt-3 text-sm leading-relaxed">
-              Tu tienda online con los mejores productos tech y envío a toda Colombia.
+              {descripcion}
             </p>
             {/* Redes sociales */}
             <div className="mt-5 flex gap-3">
               <a
-                href="https://wa.me/573001234567"
+                href={`https://wa.me/${whatsapp}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-600 transition-colors hover:border-emerald-500/50 hover:text-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
@@ -117,15 +128,15 @@ export function Footer() {
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center gap-2">
                   <Mail className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-600" aria-hidden="true" />
-                  info@siwuushop.co
+                  {email}
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-600" aria-hidden="true" />
-                  +57 300 123 4567
+                  +{whatsapp}
                 </li>
                 <li className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-600" aria-hidden="true" />
-                  Bogotá, Colombia
+                  {ubicacion}
                 </li>
               </ul>
             </div>

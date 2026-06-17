@@ -7,6 +7,7 @@ import {
   actualizarProducto,
   crearVariante,
   eliminarVariante,
+  actualizarVariante,
 } from '@/lib/actions/admin'
 import { formatCOP } from '@/lib/utils'
 import { Input } from '@/components/ui/Input'
@@ -173,6 +174,26 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
       await eliminarVariante(v.id, producto.id)
     }
     setVariantes((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // Edición en sitio del recargo (precio_adicional) de una variante existente
+  const [savedVarId, setSavedVarId] = useState<string | null>(null)
+
+  const setVariantePrecio = (index: number, value: string) => {
+    const n = parseFloat(value)
+    setVariantes((prev) =>
+      prev.map((v, i) => (i === index ? { ...v, precio_adicional: Number.isFinite(n) ? n : 0 } : v))
+    )
+  }
+
+  const guardarRecargo = async (index: number) => {
+    const v = variantes[index]
+    if (!v.id || !producto) return
+    const result = await actualizarVariante(v.id, producto.id, v.precio_adicional)
+    if (result.ok) {
+      setSavedVarId(v.id)
+      setTimeout(() => setSavedVarId(null), 1500)
+    }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -432,20 +453,43 @@ export function ProductoForm({ mode, producto, categorias, proveedores }: Produc
             {variantes.length > 0 && (
               <ul className="mb-4 space-y-2">
                 {variantes.map((v, i) => (
-                  <li key={v.id || i} className="flex items-center justify-between rounded-lg bg-zinc-100 px-3 py-2 text-sm dark:bg-zinc-800">
-                    <div>
+                  <li key={v.id || i} className="flex items-center justify-between gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-sm dark:bg-zinc-800">
+                    <div className="min-w-0 flex-1">
                       <span className="font-medium">{v.nombre}: {v.valor}</span>
-                      {v.precio_adicional > 0 && (
-                        <span className="ml-1 text-zinc-500">(+{formatCOP(v.precio_adicional)})</span>
-                      )}
                       <span className={`ml-2 text-xs ${v.disponible ? 'text-green-600' : 'text-red-500'}`}>
                         {v.disponible ? '\u2713' : '\u2717'}
                       </span>
                     </div>
+
+                    {v.id ? (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span className="text-xs text-zinc-500">+$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={v.precio_adicional}
+                          onChange={(e) => setVariantePrecio(i, e.target.value)}
+                          className="w-24 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-900 focus:border-emerald-500/50 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                          aria-label={`Recargo de ${v.valor}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => guardarRecargo(i)}
+                          className="flex items-center gap-1 rounded-lg bg-emerald-500 px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-600"
+                        >
+                          {savedVarId === v.id ? <Check className="h-3.5 w-3.5" /> : 'Guardar'}
+                        </button>
+                      </div>
+                    ) : (
+                      v.precio_adicional > 0 && (
+                        <span className="shrink-0 text-xs text-zinc-500">(+{formatCOP(v.precio_adicional)})</span>
+                      )
+                    )}
+
                     <button
                       type="button"
                       onClick={() => removeVariante(i)}
-                      className="text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      className="shrink-0 text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       aria-label="Eliminar variante"
                     >
                       <X className="h-4 w-4" />

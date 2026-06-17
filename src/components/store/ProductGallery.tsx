@@ -89,18 +89,19 @@ export function ProductGallery({ imagenes, nombre }: ProductGalleryProps) {
         onKeyDown={handleKeyDown}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="group relative aspect-square overflow-hidden rounded-2xl border border-zinc-200 bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-800"
+        className="group relative aspect-square overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-100 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-800 dark:from-white dark:to-zinc-200"
       >
         <Image
           src={imagenes[selected]}
           alt={`${nombre} — vista ${selected + 1}`}
           fill
           className={cn(
-            'object-contain p-4 transition-all duration-150 group-hover:scale-105',
+            'object-contain p-2 transition-all duration-300 group-hover:scale-[1.03] sm:p-3',
             fading ? 'opacity-0' : 'opacity-100'
           )}
           sizes="(max-width: 768px) 100vw, 50vw"
           priority
+          fetchPriority="high"
         />
 
         {/* Indicador de posición en móvil (solo si hay > 1 imagen) */}

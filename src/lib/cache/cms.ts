@@ -76,6 +76,20 @@ interface TiendaConfig {
   promo_cta_label: string
   promo_cta_href: string
   promo_imagen: string | null
+  // Barra de features (editable desde admin)
+  feature_1_titulo?: string | null
+  feature_1_desc?: string | null
+  feature_2_titulo?: string | null
+  feature_2_desc?: string | null
+  feature_3_titulo?: string | null
+  feature_3_desc?: string | null
+  feature_4_titulo?: string | null
+  feature_4_desc?: string | null
+  // Footer (editable desde admin)
+  footer_descripcion?: string | null
+  footer_whatsapp?: string | null
+  footer_email?: string | null
+  footer_ubicacion?: string | null
 }
 
 export const getTiendaConfig = unstable_cache(

@@ -2,7 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { POR_PAGINA, type FiltrosCatalogo } from '@/lib/catalogo'
 import { getCategoriasActivas } from '@/lib/cache/cms'
 import { categoriasQueCoinciden, filtroTexto } from '@/lib/busqueda'
-import type { Producto } from '@/types'
+import type { Producto, Variante } from '@/types'
+
+/** El catálogo trae las variantes para poder preguntar color y capacidad desde la tarjeta. */
+export type ProductoConVariantes = Producto & { variantes?: Variante[] | null }
 
 /**
  * La consulta del catálogo, una sola vez para /productos y /categoria/[slug].
@@ -15,12 +18,12 @@ export async function buscarProductos(
   filtros: FiltrosCatalogo,
   categoriaId: string | null,
   pagina: number,
-): Promise<{ productos: Producto[]; total: number }> {
+): Promise<{ productos: ProductoConVariantes[]; total: number }> {
   const supabase = createClient()
 
   let query = supabase
     .from('productos')
-    .select('*', { count: 'exact' })
+    .select('*, variantes(*)', { count: 'exact' })
     .eq('activo', true)
 
   // Misma lógica que el buscador instantáneo: nombre, descripción corta y
@@ -55,5 +58,5 @@ export async function buscarProductos(
   const desde = (pagina - 1) * POR_PAGINA
   const { data, count } = await query.range(desde, desde + POR_PAGINA - 1)
 
-  return { productos: (data as Producto[]) ?? [], total: count ?? 0 }
+  return { productos: (data as ProductoConVariantes[]) ?? [], total: count ?? 0 }
 }

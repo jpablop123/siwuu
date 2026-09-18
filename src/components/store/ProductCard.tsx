@@ -10,10 +10,11 @@ import { OrigenBadge } from './OrigenBadge'
 import { useCart } from '@/lib/cart/store'
 import { useToast } from '@/components/ui/Toast'
 import { CATALOGO_MIXTO } from '@/lib/encargos'
-import type { Producto } from '@/types'
+import { SelectorRapido } from './SelectorRapido'
+import type { Producto, Variante } from '@/types'
 
 interface ProductCardProps {
-  producto: Producto
+  producto: Producto & { variantes?: Variante[] | null }
   /** true en las primeras filas del grid: carga la foto sin esperar al scroll. */
   prioridad?: boolean
 }
@@ -31,19 +32,31 @@ interface ProductCardProps {
  *    usuario toca algo.
  *  · Cero hover tricks: el slider de imágenes por posición del mouse se quitó
  *    porque no ayuda a decidir, no existe en móvil y cargaba todas las fotos.
+ *  · Si el producto tiene opciones (color, capacidad), el botón abre el
+ *    selector en vez de agregar a ciegas: antes metía el iPhone sin color y al
+ *    precio del modelo base, aunque el de 512 GB cueste $710.000 más.
  */
 export function ProductCard({ producto, prioridad = false }: ProductCardProps) {
   const { agregarItem } = useCart()
   const addToast = useToast((s) => s.addToast)
   const [added, setAdded] = useState(false)
+  const [selectorAbierto, setSelectorAbierto] = useState(false)
 
   const imagen = producto.imagenes?.filter(Boolean)[0] ?? ''
+  const variantes = producto.variantes ?? []
+  const tieneOpciones = variantes.length > 0
 
   const handleAgregar = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    // Optimista: el carrito es estado local, así que confirma al instante.
+    // Con opciones hay que preguntar: el precio y el equipo dependen de ellas.
+    if (tieneOpciones) {
+      setSelectorAbierto(true)
+      return
+    }
+
+    // Sin opciones, agregar es inmediato. El carrito es estado local.
     agregarItem({
       productoId: producto.id,
       nombre: producto.nombre,
@@ -111,7 +124,12 @@ export function ProductCard({ producto, prioridad = false }: ProductCardProps) {
         <button
           type="button"
           onClick={handleAgregar}
-          aria-label={`Agregar ${producto.nombre} al carrito`}
+          aria-label={
+            tieneOpciones
+              ? `Elegir opciones de ${producto.nombre}`
+              : `Agregar ${producto.nombre} al carrito`
+          }
+          aria-haspopup={tieneOpciones ? 'dialog' : undefined}
           className={cn(
             'flex h-11 w-full items-center justify-center gap-1.5 rounded-lg border text-sm font-semibold transition-colors duration-100',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-ink-900',
@@ -128,11 +146,19 @@ export function ProductCard({ producto, prioridad = false }: ProductCardProps) {
           ) : (
             <>
               <Plus className="h-4 w-4" aria-hidden="true" />
-              Agregar
+              {tieneOpciones ? 'Elegir' : 'Agregar'}
             </>
           )}
         </button>
       </div>
+
+      {selectorAbierto && (
+        <SelectorRapido
+          producto={producto}
+          variantes={variantes}
+          onCerrar={() => setSelectorAbierto(false)}
+        />
+      )}
     </article>
   )
 }

@@ -31,7 +31,8 @@ export default async function HomePage() {
     getCategoriasActivas(),
     supabase
       .from('productos')
-      .select('*')
+      // Con variantes: la tarjeta pregunta color y capacidad antes de agregar
+      .select('*, variantes(*)')
       .eq('activo', true)
       .order('created_at', { ascending: false })
       .limit(20),

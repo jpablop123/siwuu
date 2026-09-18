@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { rlBusqueda } from '@/lib/ratelimit'
 import { getCategoriasActivas } from '@/lib/cache/cms'
 import {
@@ -18,12 +18,22 @@ export const runtime = 'nodejs'
  * Cliente anónimo, no el de cookies: los resultados son iguales para todo el
  * mundo, y así la respuesta se puede cachear en la CDN. Lee con las mismas
  * políticas RLS que ve un visitante sin cuenta.
+ *
+ * Se crea dentro de la petición, no al cargar el módulo: durante el build no
+ * hay variables de entorno, y crear el cliente ahí tumbaba el despliegue
+ * ("supabaseUrl is required"). Misma razón por la que el resto de la app no
+ * toca Supabase en tiempo de build.
  */
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { auth: { persistSession: false } },
-)
+let cliente: SupabaseClient | null = null
+
+function getSupabase(): SupabaseClient | null {
+  if (cliente) return cliente
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !anon) return null
+  cliente = createClient(url, anon, { auth: { persistSession: false } })
+  return cliente
+}
 
 /** Cache corto en la CDN: el catálogo no cambia de un minuto a otro. */
 const CACHE = 'public, s-maxage=60, stale-while-revalidate=300'
@@ -55,6 +65,11 @@ export async function GET(request: Request) {
   const q = (new URL(request.url).searchParams.get('q') ?? '').trim().slice(0, 80)
   if (q.length < MIN_CARACTERES) {
     return NextResponse.json(vacia(q), { headers: { 'Cache-Control': CACHE } })
+  }
+
+  const supabase = getSupabase()
+  if (!supabase) {
+    return NextResponse.json(vacia(q), { headers: { 'Cache-Control': 'no-store' } })
   }
 
   const categorias = await getCategoriasActivas()

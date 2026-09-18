@@ -2,51 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── LIGHT MODE (default) ── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Siwuu — dirección "Aduana sobre blanco"
+   Blanco y hueso de fondo, tinta azulada, azul señal para acciones y naranja
+   aduana para todo lo que habla de importación.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── MODO CLARO (por defecto) ── */
 :root {
-  --background: 0 0% 100%;          /* white */
-  --foreground: 240 6% 10%;         /* zinc-900 */
-  --card: 240 5% 96%;               /* zinc-50 */
-  --card-foreground: 240 6% 10%;
+  --background: 0 0% 100%;            /* blanco */
+  --foreground: 210 20% 9%;           /* ink-900 */
+  --card: 0 0% 100%;
+  --card-foreground: 210 20% 9%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 6% 10%;
-  --primary: 160 84% 39%;           /* emerald-500 */
+  --popover-foreground: 210 20% 9%;
+  --primary: 222 87% 45%;             /* azul señal #0F4CD8 */
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 5% 92%;          /* zinc-100 */
-  --secondary-foreground: 240 6% 10%;
-  --muted: 240 5% 92%;              /* zinc-100 */
-  --muted-foreground: 240 4% 46%;   /* zinc-500 */
-  --accent: 45 93% 56%;             /* amber-400 */
-  --accent-foreground: 240 6% 10%;
-  --destructive: 350 89% 60%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 6% 88%;             /* zinc-200 */
-  --input: 240 5% 92%;              /* zinc-100 */
-  --ring: 160 84% 39%;
-  --radius: 0.75rem;
+  --secondary: 220 20% 96%;           /* ink-50 */
+  --secondary-foreground: 210 20% 9%;
+  --muted: 220 20% 96%;
+  --muted-foreground: 215 9% 45%;     /* ink-500 */
+  --accent: 25 100% 50%;              /* naranja aduana #FF6A00 */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 216 17% 90%;              /* ink-200 */
+  --input: 220 20% 96%;
+  --ring: 222 87% 45%;
+  --radius: 0.875rem;
 }
 
-/* ── DARK MODE ── */
+/* ── MODO OSCURO ── */
 .dark {
-  --background: 240 6% 4%;          /* zinc-950 #09090b */
-  --foreground: 0 0% 98%;           /* zinc-50 */
-  --card: 240 4% 10%;               /* zinc-900 #18181b */
-  --card-foreground: 0 0% 98%;
-  --popover: 240 4% 10%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 160 84% 51%;           /* emerald-400 */
-  --primary-foreground: 240 6% 4%;
-  --secondary: 240 4% 16%;          /* zinc-800 */
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 4% 16%;              /* zinc-800 */
-  --muted-foreground: 240 4% 46%;   /* zinc-500 */
-  --accent: 45 93% 56%;             /* amber-400 */
-  --accent-foreground: 240 6% 4%;
-  --destructive: 350 89% 60%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 4% 26%;             /* zinc-700 #3f3f46 */
-  --input: 240 4% 16%;              /* zinc-800 */
-  --ring: 160 84% 51%;
+  --background: 210 30% 6%;           /* ink-950 */
+  --foreground: 220 20% 97%;
+  --card: 213 19% 11%;
+  --card-foreground: 220 20% 97%;
+  --popover: 213 19% 11%;
+  --popover-foreground: 220 20% 97%;
+  --primary: 222 82% 60%;             /* azul más claro para contraste sobre tinta */
+  --primary-foreground: 210 30% 6%;
+  --secondary: 215 19% 17%;
+  --secondary-foreground: 220 20% 97%;
+  --muted: 215 19% 17%;
+  --muted-foreground: 213 12% 64%;
+  --accent: 25 100% 58%;
+  --accent-foreground: 210 30% 6%;
+  --destructive: 0 72% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 215 16% 24%;
+  --input: 215 19% 17%;
+  --ring: 222 82% 60%;
 }
 
 body {
@@ -54,86 +60,219 @@ body {
   background: hsl(var(--background));
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ── SCROLLBAR ── */
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #FFFFFF; }
+::-webkit-scrollbar-thumb { background: #CBD1D9; border: 3px solid #FFFFFF; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #97A1AE; }
 
-::-webkit-scrollbar-track { background: #ffffff; }
-::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+.dark ::-webkit-scrollbar-track { background: #0B0F14; }
+.dark ::-webkit-scrollbar-thumb { background: #363E4B; border-color: #0B0F14; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #4C5563; }
 
-.dark ::-webkit-scrollbar-track { background: #09090b; }
-.dark ::-webkit-scrollbar-thumb { background: #3f3f46; }
-.dark ::-webkit-scrollbar-thumb:hover { background: #52525b; }
-
-/* ── SKELETON ── */
 @layer utilities {
   .text-balance { text-wrap: balance; }
 
   .skeleton {
-    background: linear-gradient(90deg, #e4e4e7 25%, #f4f4f5 50%, #e4e4e7 75%);
+    background: linear-gradient(90deg, #E2E5EA 25%, #F7F8FA 50%, #E2E5EA 75%);
     background-size: 200% 100%;
     animation: shimmer 2s linear infinite;
   }
 
   .dark .skeleton {
-    background: linear-gradient(90deg, #262626 25%, #333333 50%, #262626 75%);
+    background: linear-gradient(90deg, #222933 25%, #363E4B 50%, #222933 75%);
     background-size: 200% 100%;
   }
 
   .glass {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.86);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
 
-  .dark .glass {
-    background: rgba(10, 10, 10, 0.8);
-  }
+  .dark .glass { background: rgba(11, 15, 20, 0.85); }
 
   .glass-light {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
 
-  .dark .glass-light {
-    background: rgba(23, 23, 23, 0.9);
+  .dark .glass-light { background: rgba(22, 28, 36, 0.92); }
+
+  /* Fondo hueso para alternar secciones sin usar gris sucio */
+  .bg-hueso { background-color: #F6F5F2; }
+  .dark .bg-hueso { background-color: #10151B; }
+
+  /* ── Escenas ──────────────────────────────────────────────────────────────
+     El registro alto de la marca: el hero, "cómo funciona" y el cierre.
+     Tiene dos versiones reales, no una apagada:
+
+       Día   — luz azul sobre papel, con una brasa naranja al fondo.
+       Noche — azul noche profundo con la misma luz detrás del contenido.
+
+     Las zonas de catálogo se quedan siempre en blanco, para que las fotos
+     oficiales de producto no se vean como recuadros pegados. */
+  .escena {
+    /* Tokens semánticos: la escena reasigna estos cinco valores y todo lo que
+       vive adentro los consume. Cambiar de día a noche no toca un solo
+       componente. */
+    --superficie: rgba(255, 255, 255, 0.72);
+    --texto: #101418;
+    --texto-suave: #4C5563;
+    --borde: rgba(16, 20, 24, 0.12);
+    --acento: #DB5400;          /* aduana-700: el único naranja legible como texto */
+
+    background:
+      radial-gradient(120% 90% at 10% 0%, #D9E4FD 0%, transparent 58%),
+      radial-gradient(80% 70% at 94% 8%, #FFE2CC 0%, transparent 52%),
+      linear-gradient(170deg, #FBFCFE 0%, #F4F6FB 60%, #FFFFFF 100%);
+    color: var(--texto);
+  }
+
+  .dark .escena {
+    --superficie: rgba(255, 255, 255, 0.055);
+    --texto: #FFFFFF;
+    --texto-suave: #CBD1D9;
+    --borde: rgba(255, 255, 255, 0.14);
+    --acento: #FFA15F;          /* sobre tinta el naranja sí aclara para leerse */
+
+    background:
+      radial-gradient(120% 90% at 12% 0%, #14337A 0%, transparent 55%),
+      radial-gradient(90% 80% at 92% 12%, #0F4CD8 0%, transparent 48%),
+      linear-gradient(170deg, #0A1330 0%, #070D1F 62%, #050912 100%);
+  }
+
+  /* Brasa naranja: el punto de calor de la marca, al fondo de la escena */
+  .brasa::after {
+    content: "";
+    position: absolute;
+    inset: auto -10% -30% auto;
+    width: 46%;
+    aspect-ratio: 1;
+    background: radial-gradient(circle, rgba(255,106,0,0.22) 0%, transparent 68%);
+    filter: blur(28px);
+    pointer-events: none;
+  }
+  .dark .brasa::after {
+    background: radial-gradient(circle, rgba(255,106,0,0.30) 0%, transparent 68%);
+  }
+
+  /* Tarjeta de vidrio dentro de una escena */
+  .vidrio {
+    background: var(--superficie, rgba(255, 255, 255, 0.72));
+    border: 1px solid var(--borde, rgba(16, 20, 24, 0.09));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .halo-azul { box-shadow: 0 24px 60px -26px rgba(15, 76, 216, 0.45); }
+  .halo-naranja { box-shadow: 0 24px 60px -26px rgba(255, 106, 0, 0.40); }
+  .dark .halo-azul { box-shadow: 0 24px 70px -24px rgba(15, 76, 216, 0.75); }
+  .dark .halo-naranja { box-shadow: 0 24px 70px -24px rgba(255, 106, 0, 0.55); }
+
+  /* Palabra encendida dentro de un titular */
+  .encendido {
+    background: linear-gradient(100deg, #0F4CD8 0%, #2C63E6 42%, #FF6A00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .dark .encendido {
+    background: linear-gradient(100deg, #7FA1F6 0%, #4574EC 45%, #FF8433 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Texto y bordes dentro de una escena: leen los tokens, nunca un hex */
+  .escena-ink    { color: var(--texto, #101418); }
+  .escena-muted  { color: var(--texto-suave, #4C5563); }
+  .escena-line   { border-color: var(--borde, rgba(16, 20, 24, 0.12)); }
+  .escena-acento { color: var(--acento, #DB5400); }
+
+  /* Retícula fina de la dirección: estructura sin ruido */
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(16,20,24,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(16,20,24,0.05) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+  .dark .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px);
   }
 }
 
 @layer components {
   .font-heading {
     font-family: var(--font-heading), system-ui, sans-serif;
+    letter-spacing: -0.025em;
   }
-  .text-gradient {
-    background: linear-gradient(135deg, #10b981, #a78bfa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+
+  /* Sello de aduana — el recurso gráfico de la marca.
+     El naranja es FONDO con tinta encima: como texto o borde fino no alcanza
+     el contraste mínimo sobre blanco (2,9:1). */
+  .sello {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: #FF6A00;
+    color: #161C24;
+    border-radius: 0.25rem;
+    padding: 0.2rem 0.55rem;
+    font-family: var(--font-mono), monospace;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
-  .dark .text-gradient {
-    background: linear-gradient(135deg, #34d399, #a78bfa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+
+  /* Azul sí funciona en las dos direcciones */
+  .sello-azul {
+    background: #0F4CD8;
+    color: #FFFFFF;
   }
-  .text-gradient-amber {
-    background: linear-gradient(135deg, #fbbf24, #f97316);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+
+  /* Variante discreta para cuando el sello sólido pesa demasiado: fondo suave,
+     texto en el tono oscuro que sí pasa contraste. */
+  .sello-suave {
+    background: #FFF3EB;
+    color: #B34300;
   }
-  .border-glow { border-color: rgba(52, 211, 153, 0.3); }
-  .border-glow-hover:hover {
-    border-color: rgba(52, 211, 153, 0.6);
-    box-shadow: 0 0 20px 0 rgba(52, 211, 153, 0.15);
+  .dark .sello-suave { background: rgba(255, 106, 0, 0.16); color: #FFC49A; }
+
+  .sello-azul-suave {
+    background: #EEF3FE;
+    color: #0A3190;
   }
+  .dark .sello-azul-suave { background: rgba(15, 76, 216, 0.22); color: #B4C8FB; }
+
+  /* Etiqueta de sección: reemplaza al mono verde del diseño anterior */
+  .eyebrow {
+    font-family: var(--font-mono), monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6B7482;
+  }
+  .dark .eyebrow { color: #97A1AE; }
+
+  /* Enlaces de texto dentro de contenido */
+  .link-brand {
+    color: #0F4CD8;
+    text-underline-offset: 3px;
+  }
+  .link-brand:hover { text-decoration: underline; }
+  .dark .link-brand { color: #7FA1F6; }
 }
 
-/* Smooth page transitions */
+/* Transición de página */
 main { animation: fadeIn 0.3s ease-out; }
 
 @keyframes fadeIn {
@@ -141,12 +280,22 @@ main { animation: fadeIn 0.3s ease-out; }
   to { opacity: 1; }
 }
 
-/* Selection color */
+/* Selección de texto */
 ::selection {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: #D9E4FD;
+  color: #0A3190;
 }
 .dark ::selection {
-  background-color: #064e3b;
-  color: #6ee7b7;
+  background-color: #0B2A76;
+  color: #EEF3FE;
+}
+
+/* Respeta a quien pidió menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

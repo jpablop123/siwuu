@@ -1,35 +1,30 @@
 import { createClient } from '@/lib/supabase/server'
+import { HeroDual } from '@/components/store/HeroDual'
+import { StoresMarquee } from '@/components/store/StoresMarquee'
+import { DosModelos } from '@/components/store/DosModelos'
 import { HeroBanner } from '@/components/store/HeroBanner'
 import { CategoryRow } from '@/components/store/CategoryRow'
 import { ProductCarousel } from '@/components/store/ProductCarousel'
+import { ComoFunciona } from '@/components/store/ComoFunciona'
 import { PromoBanner } from '@/components/store/PromoBanner'
 import { FeaturesBar } from '@/components/store/FeaturesBar'
+import { Faq } from '@/components/store/Faq'
+import { CtaFinal } from '@/components/store/CtaFinal'
 import { getBannersActivos, getCategoriasActivas, getTiendaConfig } from '@/lib/cache/cms'
 import type { Producto } from '@/types'
 
 /**
  * ISR — la home se regenera cada 60 s.
  *
- * Antes tenía `force-dynamic` → render desde cero en cada visit → 4 queries
- * a Supabase en cada hit. Para una home pública que cambia raramente
- * (banners, destacados, categorías) eso es desperdicio.
- *
- * Con `revalidate = 60`, Next sirve la versión cacheada de edge para todos
- * los visitantes durante 60 s. La primera request después del minuto
- * regenera en background sin bloquear al usuario.
- *
- * Si el admin guarda un banner o producto, los server actions ya hacen
- * `revalidatePath('/')` (ver admin.ts), así que el cambio se ve en
- * segundos, no esperando los 60 s.
+ * Los server actions del admin hacen `revalidatePath('/')` al guardar banners,
+ * productos o textos, así que un cambio se ve en segundos y no hay que esperar
+ * la ventana completa.
  */
 export const revalidate = 60
 
 export default async function HomePage() {
   const supabase = createClient()
 
-  // 3 queries CMS cacheadas en memoria (Next unstable_cache, 5 min TTL)
-  // + 1 query no-cacheable (productos pueden cambiar más seguido).
-  // En el caso típico, las 3 primeras devuelven 0 ms; queda solo la 4ta.
   const [slides, config, categoriasFull, productosRes] = await Promise.all([
     getBannersActivos(),
     getTiendaConfig(),
@@ -47,27 +42,38 @@ export default async function HomePage() {
 
   const lanzamientos = todos.slice(0, 10)
   const destacados = todos.filter((p) => p.destacado).slice(0, 10)
+  const heroProducto = destacados[0] ?? lanzamientos[0] ?? null
 
   return (
     <>
-      {/* 1. Hero — dinámico desde DB, fallback a slides estáticos */}
-      <HeroBanner slides={slides} />
+      {/* 1. La promesa y los dos modelos de negocio */}
+      <HeroDual producto={heroProducto} />
 
-      {/* 2. Categorías */}
+      {/* 2. Dónde compramos por encargo */}
+      <StoresMarquee />
+
+      {/* 3. Las dos formas de comprar, al mismo nivel */}
+      <DosModelos />
+
+      {/* 4. Banners del CMS — solo si el admin configuró alguno */}
+      {slides.length > 0 && <HeroBanner slides={slides} />}
+
+      {/* 5. Catálogo */}
       <CategoryRow categorias={categorias} />
 
-      {/* 3. Nuevos lanzamientos */}
-      <div className="bg-zinc-50 dark:bg-zinc-900/40">
+      <div className="bg-hueso">
         <ProductCarousel
           productos={lanzamientos}
           titulo="Nuevos lanzamientos"
           subtitulo="Recién llegados"
           verTodosHref="/productos"
-          accentColor="emerald"
         />
       </div>
 
-      {/* 4. Promo banner — dinámico desde DB, fallback a valores por defecto */}
+      {/* 6. Cómo funciona cada modelo */}
+      <ComoFunciona />
+
+      {/* 7. Destacado editorial del CMS */}
       <PromoBanner
         tag={config?.promo_tag}
         titulo={config?.promo_titulo}
@@ -78,19 +84,24 @@ export default async function HomePage() {
         imagen={config?.promo_imagen ?? undefined}
       />
 
-      {/* 5. Destacados */}
+      {/* 8. Destacados */}
       {destacados.length > 0 && (
         <ProductCarousel
           productos={destacados}
           titulo="Destacados"
           subtitulo="Selección de la tienda"
           verTodosHref="/productos"
-          accentColor="emerald"
         />
       )}
 
-      {/* 6. Trust signals */}
+      {/* 9. Confianza */}
       <FeaturesBar config={config} />
+
+      {/* 10. Objeciones */}
+      <Faq />
+
+      {/* 11. Cierre */}
+      <CtaFinal whatsapp={config?.footer_whatsapp} />
     </>
   )
 }

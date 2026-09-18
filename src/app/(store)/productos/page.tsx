@@ -1,168 +1,76 @@
-import { createClient } from '@/lib/supabase/server'
+import type { Metadata } from 'next'
 import { ProductGrid } from '@/components/store/ProductGrid'
 import { Pagination } from '@/components/store/Pagination'
-import { CatalogoFilters } from './CatalogoFilters'
+import { FiltrosProvider } from '@/components/store/catalogo/FiltrosProvider'
+import { BarraCatalogo } from '@/components/store/catalogo/BarraCatalogo'
+import { ChipsFiltros } from '@/components/store/catalogo/ChipsFiltros'
+import { PanelFiltros } from '@/components/store/catalogo/PanelFiltros'
+import { ResultadosCatalogo } from '@/components/store/catalogo/ResultadosCatalogo'
 import { getCategoriasActivas } from '@/lib/cache/cms'
-import type { Producto } from '@/types'
-import type { Metadata } from 'next'
+import { buscarProductos } from '@/lib/catalogo-server'
+import { POR_PAGINA, paginaDesde, parseFiltros, urlCatalogo } from '@/lib/catalogo'
 
 export const metadata: Metadata = {
-  title: 'Catálogo de Productos',
+  title: 'Catálogo',
   description:
-    'Explora todos nuestros productos con los mejores precios y envío a toda Colombia.',
+    'Tecnología original traída de Estados Unidos: iPhone, Mac, Samsung y accesorios con precio en pesos y envío a toda Colombia.',
 }
 
-const PER_PAGE = 12
-
-const ORDEN_OPTIONS = [
-  { value: '', label: 'Destacados' },
-  { value: 'nuevo', label: 'Más nuevos' },
-  { value: 'precio_asc', label: 'Precio: menor a mayor' },
-  { value: 'precio_desc', label: 'Precio: mayor a menor' },
-] as const
-
 interface Props {
-  searchParams: {
-    q?: string
-    categoria?: string
-    precio_min?: string
-    precio_max?: string
-    orden?: string
-    page?: string
-  }
+  searchParams: Record<string, string | string[] | undefined>
 }
 
 export default async function ProductosPage({ searchParams }: Props) {
-  const supabase = createClient()
-  const { q, categoria, precio_min, precio_max, orden, page } = searchParams
-  const currentPage = Math.max(1, parseInt(page || '1'))
+  const filtros = parseFiltros(searchParams)
+  const pagina = paginaDesde(searchParams)
 
-  // Resolver slug → id necesita las categorías primero, pero podemos
-  // arrancar la query de productos en paralelo sin filtro por categoría:
-  // si el slug es válido, hacemos un segundo round-trip rápido. Esto
-  // ahorra ~150 ms en el caso común (sin filtro de categoría seleccionado).
-  const productosBaseQuery = (catId: string | null) => {
-    let query = supabase
-      .from('productos')
-      .select('*', { count: 'exact' })
-      .eq('activo', true)
-    if (q) query = query.ilike('nombre', `%${q}%`)
-    if (catId) query = query.eq('categoria_id', catId)
-    if (precio_min) {
-      const min = parseInt(precio_min)
-      if (!isNaN(min)) query = query.gte('precio_venta', min)
-    }
-    if (precio_max) {
-      const max = parseInt(precio_max)
-      if (!isNaN(max)) query = query.lte('precio_venta', max)
-    }
-    switch (orden) {
-      case 'precio_asc':  query = query.order('precio_venta', { ascending: true }); break
-      case 'precio_desc': query = query.order('precio_venta', { ascending: false }); break
-      case 'nuevo':       query = query.order('created_at', { ascending: false }); break
-      default:
-        query = query
-          .order('destacado', { ascending: false })
-          .order('created_at', { ascending: false })
-    }
-    const offset = (currentPage - 1) * PER_PAGE
-    return query.range(offset, offset + PER_PAGE - 1)
-  }
-
-  // Categorias viene del cache compartido (5 min TTL en memoria del server).
-  // Productos siempre va a Supabase porque depende de filtros + paginación.
-  // Si hay filtro de categoría, encadenamos productos a la resolución del slug;
-  // si no, ambas queries arrancan en paralelo.
+  // Las categorías salen del caché compartido; solo se esperan antes de la
+  // consulta cuando hace falta traducir el slug a id.
   const categoriasPromise = getCategoriasActivas()
-  const productosPromise = categoria
-    ? categoriasPromise.then((cats) =>
-        productosBaseQuery(cats.find((c) => c.slug === categoria)?.id ?? null),
-      )
-    : productosBaseQuery(null)
+  const categoriaId = filtros.categoria
+    ? (await categoriasPromise).find((c) => c.slug === filtros.categoria)?.id ?? null
+    : null
 
-  const [categorias, productosRes] = await Promise.all([categoriasPromise, productosPromise])
-  const productos = (productosRes.data as Producto[]) ?? null
-  const count = productosRes.count
+  const [categorias, { productos, total }] = await Promise.all([
+    categoriasPromise,
+    buscarProductos(filtros, categoriaId, pagina),
+  ])
 
-  const totalPages = Math.ceil((count || 0) / PER_PAGE)
-  const from = (currentPage - 1) * PER_PAGE
-
-  const currentParams = { q, categoria, precio_min, precio_max, orden }
-
-  // Helper para construir hrefs preservando searchParams
-  function buildHref(overrides: Record<string, string | undefined>): string {
-    const params = new URLSearchParams()
-    const merged = { ...currentParams, ...overrides }
-    for (const [key, val] of Object.entries(merged)) {
-      if (val) params.set(key, val)
-    }
-    const qs = params.toString()
-    return `/productos${qs ? `?${qs}` : ''}`
-  }
+  const totalPaginas = Math.ceil(total / POR_PAGINA)
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-3xl">
-          {q ? `Resultados para "${q}"` : 'Todos los productos'}
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          {count || 0} producto{count !== 1 ? 's' : ''} encontrado{count !== 1 ? 's' : ''}
-        </p>
-      </div>
+    <FiltrosProvider filtros={filtros} modo="catalogo" total={total} categorias={categorias}>
+      <div className="mx-auto max-w-7xl px-4 pb-12 pt-5 sm:px-6 sm:pt-8 lg:px-8">
+        <header className="mb-3 lg:mb-6">
+          <h1 className="font-heading text-2xl font-extrabold tracking-[-0.03em] text-ink-900 sm:text-3xl dark:text-white">
+            {filtros.q ? `Resultados para “${filtros.q}”` : 'Catálogo'}
+          </h1>
+          <p className="mt-1 text-sm text-ink-500 lg:hidden dark:text-ink-400">
+            {total} producto{total === 1 ? '' : 's'}
+          </p>
+        </header>
 
-      <div className="grid gap-6 lg:grid-cols-[240px_1fr] lg:gap-8">
-        {/* Sidebar de filtros */}
-        <CatalogoFilters
-          categorias={categorias}
-          categoriaActiva={categoria}
-          precioMin={precio_min}
-          precioMax={precio_max}
-          ordenActivo={orden}
-          ordenOptions={ORDEN_OPTIONS}
-          searchQuery={q}
-          basePath="/productos"
-          currentParams={currentParams}
-        />
-
-        {/* Contenido principal */}
-        <div>
-          {/* Barra superior: orden en mobile + conteo */}
-          <div className="mb-4 flex items-center justify-between sm:mb-6">
-            <p className="hidden text-sm text-zinc-500 sm:block">
-              Mostrando {from + 1}–{Math.min(from + PER_PAGE, count || 0)} de{' '}
-              {count || 0}
-            </p>
-            <div className="ml-auto">
-              <label htmlFor="orden-select" className="sr-only">
-                Ordenar por
-              </label>
-              <select
-                id="orden-select"
-                defaultValue={orden || ''}
-                className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-              >
-                {ORDEN_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+        <div className="lg:grid lg:grid-cols-[232px_1fr] lg:gap-8">
+          <aside className="hidden lg:block" aria-label="Filtros">
+            <div className="sticky top-24">
+              <PanelFiltros />
             </div>
+          </aside>
+
+          <div className="min-w-0">
+            <BarraCatalogo />
+            <ChipsFiltros />
+            <ResultadosCatalogo>
+              <ProductGrid productos={productos} />
+              <Pagination
+                currentPage={pagina}
+                totalPages={totalPaginas}
+                createHref={(p) => urlCatalogo(filtros, 'catalogo', p)}
+              />
+            </ResultadosCatalogo>
           </div>
-
-          {/* Grid de productos */}
-          <ProductGrid productos={(productos as Producto[]) || []} />
-
-          {/* Paginación */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            createHref={(p) => buildHref({ page: p > 1 ? p.toString() : undefined })}
-          />
         </div>
       </div>
-    </div>
+    </FiltrosProvider>
   )
 }

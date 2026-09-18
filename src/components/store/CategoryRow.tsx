@@ -8,14 +8,20 @@ interface CategoryRowProps {
   categorias: Categoria[]
 }
 
-/** Gradientes de fallback cuando la categoría no tiene imagen */
+/**
+ * Fondos de respaldo cuando la categoría todavía no tiene foto.
+ *
+ * Antes era un arcoíris (violeta, verde, naranja, rosa, azul) que se leía como
+ * plantilla sin terminar. Ahora alternan solo los colores de la marca: tinta,
+ * azul señal y naranja aduana.
+ */
 const FALLBACKS = [
-  'from-violet-600 to-indigo-700',
-  'from-emerald-600 to-teal-700',
-  'from-amber-500 to-orange-600',
-  'from-rose-500 to-pink-600',
-  'from-blue-500 to-cyan-600',
-  'from-fuchsia-500 to-purple-700',
+  'from-ink-800 to-ink-950',
+  'from-brand-600 to-brand-800',
+  'from-aduana-500 to-aduana-700',
+  'from-ink-700 to-brand-900',
+  'from-brand-500 to-ink-900',
+  'from-aduana-600 to-ink-900',
 ]
 
 export function CategoryRow({ categorias }: CategoryRowProps) {

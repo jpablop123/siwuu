@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useCart, useCartTotal } from '@/lib/cart/store'
+import { EntregaEstimada } from '@/components/store/EntregaEstimada'
 import { COSTO_ENVIO, COSTO_ENVIO_GRATIS_DESDE } from '@/lib/utils'
 import { Price } from '@/components/store/Price'
 import Image from 'next/image'
@@ -708,6 +709,9 @@ export function CheckoutForm() {
               <span>Total</span>
               <Price amount={total} />
             </div>
+
+            {/* El plazo real, a la vista justo antes de pagar */}
+            <EntregaEstimada className="mt-4" />
           </div>
         </div>
       </form>

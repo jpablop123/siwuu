@@ -3,6 +3,7 @@
 import { useCart, useCartTotal, useCartCount } from '@/lib/cart/store'
 import { COSTO_ENVIO, COSTO_ENVIO_GRATIS_DESDE } from '@/lib/utils'
 import { Price } from './Price'
+import { EntregaEstimada } from './EntregaEstimada'
 import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -193,6 +194,8 @@ export function CartDrawer() {
                   <Price amount={total + envio} />
                 </div>
               </div>
+              <EntregaEstimada className="mt-3" variante="linea" />
+
               <Link
                 href="/checkout"
                 onClick={cerrarCarrito}

@@ -64,6 +64,16 @@ const exchangeRateLimiter = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, '1 m'), prefix: 'rl:fx' })
   : null
 
+/**
+ * /api/buscar — 60 requests por IP por minuto.
+ * El buscador consulta mientras la persona escribe (con debounce de 150 ms),
+ * así que una búsqueda normal son 3 a 6 llamadas. 60/min cubre a alguien que
+ * busca rápido y corta a un script que intente recorrer el catálogo.
+ */
+const busquedaLimiter = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, '1 m'), prefix: 'rl:buscar' })
+  : null
+
 // ── Tipos y helpers internos ──────────────────────────────────────────────
 
 export type RateLimitResult = { ok: true } | { ok: false; retryAfter: number }
@@ -110,4 +120,9 @@ export async function rlAuth(requestHeaders: Headers): Promise<RateLimitResult> 
 /** Usar en /api/exchange-rate */
 export async function rlExchangeRate(request: Request): Promise<RateLimitResult> {
   return applyLimit(exchangeRateLimiter, extractIp(request))
+}
+
+/** Usar en /api/buscar */
+export async function rlBusqueda(request: Request): Promise<RateLimitResult> {
+  return applyLimit(busquedaLimiter, extractIp(request))
 }

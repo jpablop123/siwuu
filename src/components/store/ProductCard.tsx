@@ -2,42 +2,48 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { calcularDescuento, cn } from '@/lib/utils'
+import { useState } from 'react'
+import { Check, Plus, ShoppingCart } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Price } from './Price'
+import { OrigenBadge } from './OrigenBadge'
 import { useCart } from '@/lib/cart/store'
 import { useToast } from '@/components/ui/Toast'
-import { ShoppingCart, Star } from 'lucide-react'
+import { CATALOGO_MIXTO } from '@/lib/encargos'
 import type { Producto } from '@/types'
-import { useState } from 'react'
 
 interface ProductCardProps {
   producto: Producto
+  /** true en las primeras filas del grid: carga la foto sin esperar al scroll. */
+  prioridad?: boolean
 }
 
-export function ProductCard({ producto }: ProductCardProps) {
+/**
+ * Tarjeta de producto del catálogo.
+ *
+ * Reglas que la gobiernan:
+ *  · El botón de agregar está SIEMPRE visible. En móvil no existe el hover, y
+ *    esconder la acción principal detrás de un gesto que no ocurre es perder
+ *    ventas en el 80% del tráfico.
+ *  · El precio es el elemento más pesado después de la foto, y va en tinta:
+ *    ponerle color lo abarata.
+ *  · El único naranja es el badge de origen. El azul solo aparece cuando el
+ *    usuario toca algo.
+ *  · Cero hover tricks: el slider de imágenes por posición del mouse se quitó
+ *    porque no ayuda a decidir, no existe en móvil y cargaba todas las fotos.
+ */
+export function ProductCard({ producto, prioridad = false }: ProductCardProps) {
   const { agregarItem } = useCart()
   const addToast = useToast((s) => s.addToast)
   const [added, setAdded] = useState(false)
 
-  const imagenes = producto.imagenes?.filter(Boolean) ?? []
-  const imagen = imagenes[0] || ''
-  const tieneVarias = imagenes.length > 1
-  const [idx, setIdx] = useState(0)
-  const descuento = producto.precio_tachado
-    ? calcularDescuento(producto.precio_venta, producto.precio_tachado)
-    : 0
-
-  // Slider con el mouse: la posición horizontal del cursor elige la imagen.
-  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!tieneVarias) return
-    const r = e.currentTarget.getBoundingClientRect()
-    const pct = (e.clientX - r.left) / r.width
-    setIdx(Math.min(imagenes.length - 1, Math.max(0, Math.floor(pct * imagenes.length))))
-  }
+  const imagen = producto.imagenes?.filter(Boolean)[0] ?? ''
 
   const handleAgregar = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+
+    // Optimista: el carrito es estado local, así que confirma al instante.
     agregarItem({
       productoId: producto.id,
       nombre: producto.nombre,
@@ -46,107 +52,87 @@ export function ProductCard({ producto }: ProductCardProps) {
       cantidad: 1,
     })
     setAdded(true)
-    addToast('Producto agregado al carrito')
-    setTimeout(() => setAdded(false), 1500)
+    addToast('Agregado al carrito')
+    setTimeout(() => setAdded(false), 1600)
   }
 
   return (
-    <Link href={`/productos/${producto.slug}`} className="group">
-      <article className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-        {/* Imagen */}
-        {/* Contenedor siempre bg-white — fotos con fondo blanco se ven como catálogo profesional en dark mode */}
-        <div
-          className="relative aspect-square overflow-hidden bg-white"
-          onMouseMove={handleMove}
-          onMouseLeave={() => setIdx(0)}
-        >
-          {imagenes.length ? (
-            imagenes.map((src, i) => (
-              <Image
-                key={src}
-                src={src}
-                alt={`${producto.nombre} — imagen ${i + 1}`}
-                fill
-                className={cn(
-                  'object-cover transition-opacity duration-300',
-                  i === idx ? 'opacity-100' : 'opacity-0'
-                )}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
-            ))
+    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-ink-200 bg-white transition-shadow duration-150 hover:shadow-[0_1px_3px_rgb(22_28_36_/_0.08),0_8px_24px_-12px_rgb(22_28_36_/_0.18)] dark:border-ink-800 dark:bg-ink-900">
+      <Link
+        href={`/productos/${producto.slug}`}
+        className="flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+      >
+        {/* Foto — fondo blanco siempre, también de noche: los renders oficiales
+            vienen recortados sobre blanco */}
+        <div className="relative aspect-square overflow-hidden bg-white">
+          {imagen ? (
+            <Image
+              src={imagen}
+              alt={producto.nombre}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+              priority={prioridad}
+            />
           ) : (
-            <div className="flex h-full items-center justify-center text-zinc-400 dark:text-zinc-600">
-              <ShoppingCart className="h-12 w-12" aria-hidden="true" />
+            <div className="flex h-full items-center justify-center text-ink-300">
+              <ShoppingCart className="h-10 w-10" aria-hidden="true" />
             </div>
           )}
 
-          {/* Indicadores del slider (visibles al pasar el mouse) */}
-          {tieneVarias && (
-            <div className="pointer-events-none absolute left-1/2 top-3 flex -translate-x-1/2 gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              {imagenes.map((_, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    'h-1 rounded-full transition-all duration-200',
-                    i === idx ? 'w-5 bg-zinc-900/80 dark:bg-white' : 'w-2.5 bg-zinc-900/25 dark:bg-white/40'
-                  )}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Overlay hover */}
-          <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10" />
-
-          {/* Botón agregar al carrito (hover) */}
-          <div className="absolute bottom-3 left-3 right-3 flex translate-y-4 gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-            <button
-              type="button"
-              onClick={handleAgregar}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${
-                added
-                  ? 'bg-emerald-500 text-zinc-950'
-                  : 'bg-white/95 text-emerald-700 backdrop-blur hover:bg-white dark:bg-zinc-950/90 dark:text-emerald-400 dark:hover:bg-zinc-950'
-              }`}
-              aria-label={added ? 'Agregado al carrito' : `Agregar ${producto.nombre} al carrito`}
-            >
-              <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
-              {added ? 'Agregado!' : 'Agregar'}
-            </button>
-          </div>
-
-          {/* Badges */}
-          <div className="absolute left-3 top-3 flex flex-col gap-2">
-            {descuento > 0 && (
-              <span className="rounded-lg bg-amber-400 px-2.5 py-1 text-xs font-bold text-zinc-950">
-                -{descuento}%
-              </span>
-            )}
-            {producto.destacado && (
-              <span className="flex items-center gap-1 rounded-lg bg-zinc-900/90 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur dark:bg-white/90 dark:text-zinc-900">
-                <Star className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden="true" />
-                Destacado
-              </span>
-            )}
-          </div>
+          {/* Solo cuando el catálogo mezcla local e importado: si todo viene de
+              USA, el badge en las 24 tarjetas es ruido, no información */}
+          {CATALOGO_MIXTO && <OrigenBadge className="absolute left-2.5 top-2.5" />}
         </div>
 
         {/* Info */}
-        <div className="p-4">
-          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-            {producto.tags?.[0] || 'Producto'}
-          </p>
-          <h3 className="font-heading text-sm font-semibold leading-snug text-zinc-900 line-clamp-2 min-h-[2.5rem] transition-colors group-hover:text-emerald-700 dark:text-zinc-100 dark:group-hover:text-emerald-400">
+        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-3.5">
+          <h3 className="line-clamp-2 text-sm font-medium leading-snug text-ink-800 dark:text-ink-100">
             {producto.nombre}
           </h3>
-          <div className="mt-3 flex items-baseline gap-2">
-            <Price amount={producto.precio_venta} className="text-lg font-bold text-zinc-900 dark:text-zinc-50" />
+
+          <div className="mt-auto flex items-baseline gap-2">
+            <Price
+              amount={producto.precio_venta}
+              className="font-heading text-lg font-extrabold tracking-[-0.02em] text-ink-900 tabular-nums dark:text-white sm:text-xl"
+            />
             {producto.precio_tachado && (
-              <Price amount={producto.precio_tachado} className="text-xs text-zinc-400 line-through dark:text-zinc-600" />
+              <Price
+                amount={producto.precio_tachado}
+                className="text-xs text-ink-400 line-through dark:text-ink-500"
+              />
             )}
           </div>
         </div>
-      </article>
-    </Link>
+      </Link>
+
+      {/* Acción — siempre visible, 44px de alto, azul solo al tocar */}
+      <div className="px-3 pb-3 sm:px-3.5 sm:pb-3.5">
+        <button
+          type="button"
+          onClick={handleAgregar}
+          aria-label={`Agregar ${producto.nombre} al carrito`}
+          className={cn(
+            'flex h-11 w-full items-center justify-center gap-1.5 rounded-lg border text-sm font-semibold transition-colors duration-100',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-ink-900',
+            added
+              ? 'border-brand-500 bg-brand-500 text-white'
+              : 'border-ink-200 bg-white text-ink-900 hover:border-brand-500 hover:bg-brand-500 hover:text-white active:bg-brand-600 dark:border-ink-700 dark:bg-ink-900 dark:text-white',
+          )}
+        >
+          {added ? (
+            <>
+              <Check className="h-4 w-4" aria-hidden="true" />
+              Agregado
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Agregar
+            </>
+          )}
+        </button>
+      </div>
+    </article>
   )
 }

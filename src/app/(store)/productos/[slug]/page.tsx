@@ -5,6 +5,7 @@ import { AddToCartForm } from './AddToCartForm'
 import { Badge } from '@/components/ui/Badge'
 import { calcularDescuento } from '@/lib/utils'
 import { Price } from '@/components/store/Price'
+import { EntregaEstimada } from '@/components/store/EntregaEstimada'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { Producto, Variante, Categoria } from '@/types'
@@ -216,9 +217,9 @@ export default async function ProductoPage({ params }: Props) {
           {/* Precios */}
           <div className="mt-5">
             <div className="flex items-baseline gap-3">
-              <Price amount={p.precio_venta} className="font-mono text-3xl font-bold text-emerald-500" />
+              <Price amount={p.precio_venta} className="font-heading text-4xl font-extrabold tracking-[-0.03em] text-ink-900 dark:text-white" />
               {p.precio_tachado && descuento > 0 && (
-                <Price amount={p.precio_tachado} className="font-mono text-lg text-zinc-400 line-through" />
+                <Price amount={p.precio_tachado} className="text-lg text-ink-400 line-through dark:text-ink-500" />
               )}
             </div>
             {p.precio_tachado && descuento > 0 && (
@@ -238,20 +239,24 @@ export default async function ProductoPage({ params }: Props) {
           {/* Formulario de agregar al carrito (variantes + cantidad + botón) */}
           <AddToCartForm producto={p} variantes={variantes} />
 
-          {/* Trust signals */}
+          {/* El plazo real, antes de pagar y no después */}
+          <EntregaEstimada className="mt-5" />
+
+          {/* Trust signals — cada uno lleva a la página que lo respalda */}
           <div className="mt-6 grid grid-cols-3 gap-3">
             {[
-              { icon: Truck, text: 'Entrega a domicilio' },
-              { icon: ShieldCheck, text: 'Pago seguro' },
-              { icon: RotateCcw, text: 'Garantía' },
-            ].map(({ icon: Icon, text }) => (
-              <div
+              { icon: Truck, text: 'Entrega a domicilio', href: '/garantia#tiempos' },
+              { icon: ShieldCheck, text: 'Pago seguro', href: '/terminos' },
+              { icon: RotateCcw, text: 'Garantía', href: '/garantia#garantia' },
+            ].map(({ icon: Icon, text, href }) => (
+              <Link
                 key={text}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900"
+                href={href}
+                className="flex flex-col items-center gap-1.5 rounded-xl border border-ink-200 bg-ink-50 px-3 py-3 text-center transition-colors hover:border-brand-500/50 dark:border-ink-800 dark:bg-ink-900"
               >
-                <Icon className="h-5 w-5 text-emerald-500" aria-hidden="true" />
-                <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400">{text}</span>
-              </div>
+                <Icon className="h-5 w-5 text-brand-500" aria-hidden="true" />
+                <span className="text-[11px] font-medium text-ink-600 dark:text-ink-300">{text}</span>
+              </Link>
             ))}
           </div>
 
@@ -259,7 +264,7 @@ export default async function ProductoPage({ params }: Props) {
           {p.descripcion && (
             <div className="mt-8 border-t border-zinc-200 dark:border-zinc-800 pt-8">
               <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                Descripcion
+                Descripción
               </h2>
               <div className="max-w-none whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
                 {p.descripcion}
@@ -276,7 +281,7 @@ export default async function ProductoPage({ params }: Props) {
             id="relacionados-title"
             className="mb-6 font-heading text-xl font-bold text-zinc-900 dark:text-white sm:text-2xl"
           >
-            Tambien te puede interesar
+            También te puede interesar
           </h2>
           <ProductGrid productos={relacionados as Producto[]} />
         </section>

@@ -21,13 +21,13 @@ export function Pagination({ currentPage, totalPages, createHref }: PaginationPr
       {currentPage > 1 ? (
         <Link
           href={createHref(currentPage - 1)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-400 transition-colors hover:bg-ink-100 dark:hover:bg-ink-800"
           aria-label="Página anterior"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </Link>
       ) : (
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600">
+        <span className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-ink-200 dark:border-ink-700 text-ink-400 dark:text-ink-600">
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </span>
       )}
@@ -35,7 +35,7 @@ export function Pagination({ currentPage, totalPages, createHref }: PaginationPr
       {/* Números */}
       {pages.map((page, i) =>
         page === null ? (
-          <span key={`dots-${i}`} className="flex h-10 w-10 items-center justify-center text-zinc-500">
+          <span key={`dots-${i}`} className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center text-ink-500">
             &hellip;
           </span>
         ) : (
@@ -43,10 +43,10 @@ export function Pagination({ currentPage, totalPages, createHref }: PaginationPr
             key={page}
             href={createHref(page)}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-colors',
+              'flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-lg text-sm font-medium transition-colors',
               page === currentPage
-                ? 'bg-emerald-500 text-zinc-950 shadow-sm'
-                : 'border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                ? 'bg-brand-500 text-white'
+                : 'border border-ink-200 dark:border-ink-700 text-ink-700 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800'
             )}
             aria-current={page === currentPage ? 'page' : undefined}
             aria-label={`Página ${page}`}
@@ -60,13 +60,13 @@ export function Pagination({ currentPage, totalPages, createHref }: PaginationPr
       {currentPage < totalPages ? (
         <Link
           href={createHref(currentPage + 1)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-400 transition-colors hover:bg-ink-100 dark:hover:bg-ink-800"
           aria-label="Página siguiente"
         >
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       ) : (
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600">
+        <span className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-lg border border-ink-200 dark:border-ink-700 text-ink-400 dark:text-ink-600">
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </span>
       )}

@@ -1,18 +1,3 @@
--- ============================================================
--- Seed — Carga inicial de productos Apple / Samsung / Prodigee
---
--- Origen: lista del proveedor (USD).
--- Conversión usada: $1 USD = $4.200 COP.
--- Markup aplicado: 50% sobre el costo (precio_venta = costo × 1.5).
--- Precio tachado: precio_venta × 1.2 (para mostrar "descuento").
--- Stock virtual: cantidad listada en la columna Qty del proveedor.
---
--- Cómo correrlo: copiar todo y pegarlo en el SQL Editor de Supabase.
--- ON CONFLICT garantiza idempotencia — podés re-ejecutarlo sin duplicar.
--- ============================================================
-
-
--- ── 1. Categorías necesarias ─────────────────────────────────────
 
 INSERT INTO categorias (nombre, slug, descripcion, activa, orden) VALUES
   ('Cargadores',   'cargadores',   'Adaptadores de pared y cargadores de viaje',                      TRUE, 10),
@@ -23,13 +8,6 @@ INSERT INTO categorias (nombre, slug, descripcion, activa, orden) VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 
--- ── 2. Productos ─────────────────────────────────────────────────
---
--- Patrón: cada INSERT calcula precio_venta = costo_cop * 1.5
---                                 precio_tachado = precio_venta * 1.2
---
--- Si modificás los precios desde el admin, esto no se sobreescribe
--- gracias a ON CONFLICT (slug) DO NOTHING.
 
 WITH costos AS (
   SELECT * FROM (VALUES
@@ -70,7 +48,3 @@ JOIN categorias cat ON cat.slug = c.categoria_slug
 ON CONFLICT (slug) DO NOTHING;
 
 
--- ── 3. Verificación ──────────────────────────────────────────────
--- SELECT nombre, precio_venta, stock_virtual FROM productos
--- WHERE slug LIKE 'apple-%' OR slug LIKE 'prodigee-%' OR slug LIKE 'samsung-%'
--- ORDER BY categoria_id, nombre;

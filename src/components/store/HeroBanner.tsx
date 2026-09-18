@@ -158,8 +158,16 @@ export function HeroBanner({ slides: dbSlides }: HeroBannerProps) {
           {/* Overlay degradado para legibilidad del texto */}
           <div className={cn('absolute inset-0', OVERLAY[s.align])} aria-hidden="true" />
 
-          {/* Contenido del slide */}
-          <div className="absolute inset-0 flex items-center">
+          {/* Contenido del slide.
+              La imagen hace crossfade de 700 ms, pero el texto NO puede
+              solaparse con el del slide saliente: sale de una y entra cuando
+              el fondo ya cambió. Antes se veían los dos titulares encimados. */}
+          <div
+            className={cn(
+              'absolute inset-0 flex items-center transition-opacity duration-300',
+              i === current ? 'opacity-100 delay-300' : 'pointer-events-none opacity-0',
+            )}
+          >
             <div
               className={cn(
                 'mx-auto w-full max-w-7xl px-6 sm:px-8 lg:px-12',

@@ -6,6 +6,9 @@ const TIENDA_LINKS = [
   { label: 'Todos los productos', href: '/productos' },
   { label: 'Categorías', href: '/#categorias' },
   { label: 'Destacados', href: '/productos?destacado=true' },
+  { label: 'Pídelo de USA', href: '/pedido-usa' },
+  { label: 'Cómo funciona', href: '/#como-funciona' },
+  { label: 'Garantía y devoluciones', href: '/garantia' },
 ] as const
 
 const CUENTA_LINKS = [
@@ -42,7 +45,8 @@ export function Footer({ config }: { config?: FooterConfig | null }) {
             <div className="flex items-center">
               <Logo className="h-8 w-auto" />
             </div>
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-emerald-400/70">
+            {/* Eslogan oficial: de acá sale el nombre — Ship It With Us → SIWUU */}
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.22em] text-ink-500 dark:text-ink-400">
               Ship it with us
             </p>
             <p className="mt-3 text-sm leading-relaxed">

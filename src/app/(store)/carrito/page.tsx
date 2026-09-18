@@ -3,6 +3,7 @@
 import { useCart, useCartTotal } from '@/lib/cart/store'
 import { COSTO_ENVIO, COSTO_ENVIO_GRATIS_DESDE } from '@/lib/utils'
 import { Price } from '@/components/store/Price'
+import { EntregaEstimada } from '@/components/store/EntregaEstimada'
 import { CartItemRow } from '@/components/store/CartItem'
 import { Button } from '@/components/ui/Button'
 import { ShoppingBag } from 'lucide-react'
@@ -68,8 +69,10 @@ export default function CarritoPage() {
               <Price amount={total} />
             </div>
           </div>
+          <EntregaEstimada className="mt-5" />
+
           <Link href="/checkout">
-            <Button size="lg" className="mt-6 w-full">
+            <Button size="lg" className="mt-4 w-full">
               Ir al checkout
             </Button>
           </Link>

@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { Navbar } from '@/components/store/Navbar'
 import { Footer } from '@/components/store/Footer'
+import { WhatsAppFab } from '@/components/store/WhatsAppFab'
+import { BarraInferior } from '@/components/store/BarraInferior'
+import { BusquedaProvider } from '@/components/store/busqueda/BusquedaProvider'
 import { createClient } from '@/lib/supabase/server'
 import { getTiendaConfig } from '@/lib/cache/cms'
 
@@ -60,10 +63,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   const [user, config] = await Promise.all([getUserFromSession(), getTiendaConfig()])
 
   return (
-    <>
+    <BusquedaProvider>
       <Navbar user={user} />
-      <main className="min-h-[calc(100dvh-4rem)]">{children}</main>
+      <main className="min-h-[calc(100dvh-4rem)] pb-16 md:pb-0">{children}</main>
       <Footer config={config} />
-    </>
+      <WhatsAppFab numero={config?.footer_whatsapp} />
+      <BarraInferior />
+    </BusquedaProvider>
   )
 }
